@@ -43,7 +43,7 @@ const products: Product[] = [
     bulletColor: "bg-cyan",
   },
   {
-    title: "Gift Upper",
+    title: "Gift Cardy",
     subtitle: "Gift certificates, beautifully managed",
     description:
       "A full SaaS platform that lets businesses sell, track, and redeem branded digital gift certificates from one powerful dashboard. Stripe-powered payments, real-time analytics, and instant email delivery — set up in minutes.",
@@ -57,7 +57,7 @@ const products: Product[] = [
     status: "live",
     icon: Gift,
     gradient: "from-violet to-fuchsia-500",
-    image: "/products/gift-upper.png",
+    image: "/products/gift-cardy.png",
     bulletColor: "bg-violet",
   },
   {
