@@ -23,6 +23,33 @@ export const metadata: Metadata = {
     "artificial intelligence",
     "Triple 3 Labs",
   ],
+  metadataBase: new URL("https://triple3labs.io"),
+  openGraph: {
+    title: "Triple 3 Labs | AI Agents + Automations",
+    description:
+      "We build intelligent AI agents and automation systems that transform your business operations.",
+    url: "https://triple3labs.io",
+    siteName: "Triple 3 Labs",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Triple 3 Labs | AI Agents + Automations",
+    description:
+      "We build intelligent AI agents and automation systems that transform your business operations.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
