@@ -2,7 +2,6 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Marquee from "@/components/Marquee";
 import Features from "@/components/Features";
-import Stats from "@/components/Stats";
 import ProductShowcase from "@/components/ProductShowcase";
 import WhyAgents from "@/components/WhyAgents";
 import Process from "@/components/Process";
@@ -16,7 +15,6 @@ export default function Home() {
       <Hero />
       <Marquee />
       <WhyAgents />
-      <Stats />
       <Features />
       <ProductShowcase />
       <Process />

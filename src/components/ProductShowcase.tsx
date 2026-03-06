@@ -8,6 +8,8 @@ import {
   Phone,
   ShieldCheck,
   FileSearch,
+  ConciergeBell,
+  MessageSquare,
 } from "lucide-react";
 
 interface Product {
@@ -41,6 +43,60 @@ const products: Product[] = [
     gradient: "from-cyan to-blue-500",
     image: "/products/theater-agent.png",
     bulletColor: "bg-cyan",
+  },
+  {
+    title: "Customer Service Chat Agent",
+    subtitle: "AI-powered live chat for box office support",
+    description:
+      "An embeddable chat widget for Amish Country Theater that lets website visitors browse upcoming shows, check ticket availability, and get instant answers — all through a friendly, conversational AI assistant without ever picking up the phone.",
+    highlights: [
+      "Embeddable chat widget with custom branding",
+      "Live show schedules & ticket availability lookup",
+      "Instant answers to venue FAQs & policies",
+      "Seamless escalation to live staff when needed",
+    ],
+    tags: ["AI Agent", "Chat Widget", "Next.js", "Hospitality"],
+    status: "live",
+    icon: MessageSquare,
+    gradient: "from-cyan to-blue-500",
+    image: "/products/theater-agent.png",
+    bulletColor: "bg-cyan",
+  },
+  {
+    title: "Hotel Front Desk Phone Agent",
+    subtitle: "AI-powered hotel concierge that never clocks out",
+    description:
+      "A conversational AI front desk agent that handles guest inquiries, room availability, reservation lookups, and property FAQs — 24/7 via phone with natural, friendly voice interactions and seamless handoff to staff when needed.",
+    highlights: [
+      "Natural voice AI for guest calls & inquiries",
+      "Real-time room availability & reservation lookup",
+      "Property-specific FAQ knowledge base",
+      "Seamless warm handoff to front desk staff",
+    ],
+    tags: ["AI Agent", "Voice AI", "Hospitality", "ElevenLabs"],
+    status: "live",
+    icon: ConciergeBell,
+    gradient: "from-rose-400 to-pink-600",
+    image: "/products/hotel-front-desk-agent.png",
+    bulletColor: "bg-rose-400",
+  },
+  {
+    title: "Hotel Front Desk Chat Agent",
+    subtitle: "AI-powered chat concierge for your hotel website",
+    description:
+      "A branded chat widget that lives on your hotel's website, giving guests instant answers about room availability, amenities, check-in/check-out policies, and local recommendations — 24/7 without tying up the front desk.",
+    highlights: [
+      "Embeddable chat widget with hotel branding",
+      "Real-time room availability & booking assistance",
+      "Amenity info, policies & local recommendations",
+      "Seamless handoff to front desk staff via chat",
+    ],
+    tags: ["AI Agent", "Chat Widget", "Hospitality", "Next.js"],
+    status: "live",
+    icon: MessageSquare,
+    gradient: "from-rose-400 to-pink-600",
+    image: "/products/hotel-front-desk-agent.png",
+    bulletColor: "bg-rose-400",
   },
   {
     title: "Gift Cardy",
