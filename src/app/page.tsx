@@ -4,6 +4,7 @@ import Marquee from "@/components/Marquee";
 import Features from "@/components/Features";
 import Stats from "@/components/Stats";
 import ProductShowcase from "@/components/ProductShowcase";
+import WhyAgents from "@/components/WhyAgents";
 import Process from "@/components/Process";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
@@ -16,6 +17,7 @@ export default function Home() {
       <Marquee />
       <Stats />
       <Features />
+      <WhyAgents />
       <ProductShowcase />
       <Process />
       <CTA />
