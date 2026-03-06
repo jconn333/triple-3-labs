@@ -32,7 +32,7 @@ const steps = [
 
 export default function Process() {
   return (
-    <section id="process" className="relative py-32 px-6">
+    <section id="process" className="relative py-16 px-6">
       <div className="pointer-events-none absolute left-0 top-1/3 h-[400px] w-[400px] rounded-full bg-pink/5 blur-[128px]" />
 
       <div className="relative z-10 mx-auto max-w-7xl">

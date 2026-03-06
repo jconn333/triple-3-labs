@@ -68,7 +68,7 @@ const cardVariants = {
 
 export default function Features() {
   return (
-    <section id="services" className="relative py-32 px-6">
+    <section id="services" className="relative py-16 px-6">
       {/* Background glow */}
       <div className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-violet/5 blur-[128px]" />
 

@@ -179,7 +179,7 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
 
 export default function ProductShowcase() {
   return (
-    <section id="products" className="relative py-32 px-6">
+    <section id="products" className="relative py-16 px-6">
       {/* Background glow */}
       <div className="pointer-events-none absolute right-0 top-1/2 h-[600px] w-[600px] -translate-y-1/2 rounded-full bg-cyan/5 blur-[128px]" />
 

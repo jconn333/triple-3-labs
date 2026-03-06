@@ -15,9 +15,9 @@ export default function Home() {
       <Navbar />
       <Hero />
       <Marquee />
+      <WhyAgents />
       <Stats />
       <Features />
-      <WhyAgents />
       <ProductShowcase />
       <Process />
       <CTA />

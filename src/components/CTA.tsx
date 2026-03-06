@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 
 export default function CTA() {
   return (
-    <section id="contact" className="relative py-32 px-6">
+    <section id="contact" className="relative py-16 px-6">
       {/* Background glows */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/4 top-1/2 h-[500px] w-[500px] -translate-y-1/2 rounded-full bg-violet/10 blur-[128px]" />
