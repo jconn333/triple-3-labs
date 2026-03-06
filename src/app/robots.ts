@@ -6,6 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
+        disallow: ["/admin", "/api"],
       },
     ],
     sitemap: "https://triple3labs.io/sitemap.xml",

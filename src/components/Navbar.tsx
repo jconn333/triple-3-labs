@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn } from "lucide-react";
+import Link from "next/link";
 import { LogoIcon } from "@/components/Logo";
 
 const navLinks = [
@@ -54,6 +55,13 @@ export default function Navbar() {
               <span className="absolute -bottom-1 left-0 h-px w-0 bg-gradient-to-r from-violet to-cyan transition-all duration-300 hover:w-full" />
             </a>
           ))}
+          <Link
+            href="/admin/login"
+            className="flex items-center gap-1.5 text-sm text-white/60 transition-colors hover:text-white"
+          >
+            <LogIn size={16} />
+            Login
+          </Link>
           <a
             href="#contact"
             className="rounded-full bg-gradient-to-r from-violet to-purple px-5 py-2 text-sm font-medium text-white transition-all hover:shadow-[0_0_20px_rgba(124,58,237,0.4)] hover:scale-105"
@@ -91,6 +99,14 @@ export default function Navbar() {
                   {link.label}
                 </a>
               ))}
+              <Link
+                href="/admin/login"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-1.5 rounded-lg px-4 py-3 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+              >
+                <LogIn size={16} />
+                Login
+              </Link>
               <a
                 href="#contact"
                 onClick={() => setMobileOpen(false)}

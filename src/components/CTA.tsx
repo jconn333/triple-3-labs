@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import ContactForm from "@/components/admin/ContactForm";
 
 export default function CTA() {
   return (
@@ -17,38 +17,30 @@ export default function CTA() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.8 }}
-        className="relative z-10 mx-auto max-w-4xl text-center"
+        className="relative z-10 mx-auto max-w-2xl"
       >
-        <h2
-          className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
-          style={{ fontFamily: "var(--font-space-grotesk)" }}
-        >
-          Ready to{" "}
-          <span className="gradient-text">Supercharge</span>
-          <br />
-          Your Business?
-        </h2>
-        <p className="mx-auto mb-10 max-w-xl text-lg text-white/50">
-          Let&apos;s talk about how AI agents and automation can transform your
-          operations. Book a free discovery call today.
-        </p>
-
-        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <a
-            href="mailto:hello@triple3labs.com"
-            className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-violet via-purple to-cyan px-10 py-5 text-lg font-semibold text-white transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(124,58,237,0.5)]"
+        <div className="text-center mb-8">
+          <h2
+            className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl"
+            style={{ fontFamily: "var(--font-space-grotesk)" }}
           >
-            <span className="relative z-10">Book a Discovery Call</span>
-            <ArrowRight
-              size={20}
-              className="relative z-10 transition-transform group-hover:translate-x-1"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan via-violet to-pink opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-          </a>
+            Ready to{" "}
+            <span className="gradient-text">Supercharge</span>
+            <br />
+            Your Business?
+          </h2>
+          <p className="mx-auto max-w-xl text-lg text-white/50">
+            Tell us about your project and we&apos;ll show you how AI agents and
+            automation can transform your operations.
+          </p>
         </div>
 
-        <p className="mt-6 text-sm text-white/30">
-          No commitment required. Let&apos;s just chat.
+        <div className="glass-card rounded-2xl p-8">
+          <ContactForm />
+        </div>
+
+        <p className="mt-4 text-center text-sm text-white/30">
+          No commitment required. We&apos;ll get back to you within 24 hours.
         </p>
       </motion.div>
     </section>
