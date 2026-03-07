@@ -4,6 +4,9 @@ import Footer from "@/components/Footer";
 import BlogList from "@/components/blog/BlogList";
 import { getAllPosts } from "@/lib/blog";
 
+// Revalidate every 60 seconds so newly published posts appear without a full redeploy
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: "Blog — Triple 3 Labs",
   description:

@@ -7,6 +7,11 @@ import Footer from "@/components/Footer";
 import { getPostBySlug, getAllPostSlugs, formatDate } from "@/lib/blog";
 import "../blog-prose.css";
 
+// Revalidate every 60 seconds — new posts render on-demand and get cached
+export const revalidate = 60;
+// Allow slugs not present at build time to be rendered on first request
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
   const slugs = await getAllPostSlugs();
   return slugs.map((slug) => ({ slug }));
