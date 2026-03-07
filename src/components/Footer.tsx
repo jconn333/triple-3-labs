@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { LogoIcon } from "@/components/Logo";
 
 export default function Footer() {
@@ -35,6 +36,12 @@ export default function Footer() {
             >
               Process
             </a>
+            <Link
+              href="/blog"
+              className="text-sm text-white/40 transition-colors hover:text-white/70"
+            >
+              Blog
+            </Link>
             <a
               href="#contact"
               className="text-sm text-white/40 transition-colors hover:text-white/70"

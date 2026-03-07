@@ -11,6 +11,7 @@ import {
   Building2,
   LogOut,
   CreditCard,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -19,6 +20,7 @@ const navItems = [
   { label: "Pipeline", href: "/admin/pipeline", icon: Kanban },
   { label: "Contacts", href: "/admin/contacts", icon: Users },
   { label: "Accounts", href: "/admin/accounts", icon: Building2 },
+  { label: "Blog Posts", href: "/admin/blog", icon: FileText },
 ];
 
 const futureItems = [

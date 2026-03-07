@@ -10,6 +10,7 @@ const navLinks = [
   { label: "Services", href: "#services" },
   { label: "Products", href: "#products" },
   { label: "Process", href: "#process" },
+  { label: "Blog", href: "/blog" },
   { label: "Contact", href: "#contact" },
 ];
 
@@ -45,16 +46,27 @@ export default function Navbar() {
 
         {/* Desktop links */}
         <div className="hidden items-center gap-8 md:flex">
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="relative text-sm text-white/60 transition-colors hover:text-white"
-            >
-              {link.label}
-              <span className="absolute -bottom-1 left-0 h-px w-0 bg-gradient-to-r from-violet to-cyan transition-all duration-300 hover:w-full" />
-            </a>
-          ))}
+          {navLinks.map((link) =>
+            link.href.startsWith("/") ? (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="relative text-sm text-white/60 transition-colors hover:text-white"
+              >
+                {link.label}
+                <span className="absolute -bottom-1 left-0 h-px w-0 bg-gradient-to-r from-violet to-cyan transition-all duration-300 hover:w-full" />
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                className="relative text-sm text-white/60 transition-colors hover:text-white"
+              >
+                {link.label}
+                <span className="absolute -bottom-1 left-0 h-px w-0 bg-gradient-to-r from-violet to-cyan transition-all duration-300 hover:w-full" />
+              </a>
+            )
+          )}
           <Link
             href="/admin/login"
             className="flex items-center gap-1.5 text-sm text-white/60 transition-colors hover:text-white"
@@ -89,16 +101,27 @@ export default function Navbar() {
             className="glass mx-4 mt-2 overflow-hidden rounded-2xl md:hidden"
           >
             <div className="flex flex-col gap-1 p-4">
-              {navLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="rounded-lg px-4 py-3 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
-                >
-                  {link.label}
-                </a>
-              ))}
+              {navLinks.map((link) =>
+                link.href.startsWith("/") ? (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="rounded-lg px-4 py-3 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="rounded-lg px-4 py-3 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                  >
+                    {link.label}
+                  </a>
+                )
+              )}
               <Link
                 href="/admin/login"
                 onClick={() => setMobileOpen(false)}
