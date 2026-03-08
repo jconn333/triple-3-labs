@@ -49,38 +49,50 @@ export default function BlogList({ posts }: { posts: BlogPostMeta[] }) {
         {posts.map((post) => (
           <motion.div key={post.slug} variants={cardVariants}>
             <Link href={`/blog/${post.slug}`} className="group block">
-              <article className="glass-card rounded-2xl p-8">
-                <div className="mb-4 flex items-center gap-4 text-sm text-white/40">
-                  <span className="flex items-center gap-1.5">
-                    <Calendar size={14} />
-                    {formatDate(post.date)}
-                  </span>
-                </div>
-                <h2
-                  className="mb-3 text-2xl font-bold text-white transition-colors group-hover:text-violet-300"
-                  style={{ fontFamily: "var(--font-space-grotesk)" }}
-                >
-                  {post.title}
-                </h2>
-                <p className="mb-4 leading-relaxed text-white/50">
-                  {post.description}
-                </p>
-                {post.tags && post.tags.length > 0 && (
-                  <div className="mb-4 flex flex-wrap gap-2">
-                    {post.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs text-violet-300"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+              <article className="glass-card overflow-hidden rounded-2xl">
+                {post.image && (
+                  <div className="relative h-52 w-full overflow-hidden">
+                    <img
+                      src={post.image}
+                      alt={post.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                   </div>
                 )}
-                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-violet-400 transition-all group-hover:gap-2.5">
-                  Read more
-                  <ArrowRight size={14} />
-                </span>
+                <div className="p-8">
+                  <div className="mb-4 flex items-center gap-4 text-sm text-white/40">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar size={14} />
+                      {formatDate(post.date)}
+                    </span>
+                  </div>
+                  <h2
+                    className="mb-3 text-2xl font-bold text-white transition-colors group-hover:text-violet-300"
+                    style={{ fontFamily: "var(--font-space-grotesk)" }}
+                  >
+                    {post.title}
+                  </h2>
+                  <p className="mb-4 leading-relaxed text-white/50">
+                    {post.description}
+                  </p>
+                  {post.tags && post.tags.length > 0 && (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {post.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs text-violet-300"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-violet-400 transition-all group-hover:gap-2.5">
+                    Read more
+                    <ArrowRight size={14} />
+                  </span>
+                </div>
               </article>
             </Link>
           </motion.div>

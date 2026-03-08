@@ -18,36 +18,36 @@ export default function Footer() {
 
           {/* Links */}
           <div className="flex gap-8">
-            <a
-              href="#services"
+            <Link
+              href="/#services"
               className="text-sm text-white/40 transition-colors hover:text-white/70"
             >
               Services
-            </a>
-            <a
-              href="#products"
+            </Link>
+            <Link
+              href="/#products"
               className="text-sm text-white/40 transition-colors hover:text-white/70"
             >
               Products
-            </a>
-            <a
-              href="#process"
+            </Link>
+            <Link
+              href="/#process"
               className="text-sm text-white/40 transition-colors hover:text-white/70"
             >
               Process
-            </a>
+            </Link>
             <Link
               href="/blog"
               className="text-sm text-white/40 transition-colors hover:text-white/70"
             >
               Blog
             </Link>
-            <a
-              href="#contact"
+            <Link
+              href="/#contact"
               className="text-sm text-white/40 transition-colors hover:text-white/70"
             >
               Contact
-            </a>
+            </Link>
           </div>
 
           {/* Copyright */}
