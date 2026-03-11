@@ -23,6 +23,8 @@ interface Product {
   gradient: string;
   image: string;
   bulletColor: string;
+  imageFilter?: string;
+  imageOverlay?: string;
 }
 
 const products: Product[] = [
@@ -58,9 +60,11 @@ const products: Product[] = [
     tags: ["AI Agent", "Chat Widget", "Next.js", "Hospitality"],
     status: "live",
     icon: MessageSquare,
-    gradient: "from-cyan to-blue-500",
+    gradient: "from-indigo-400 to-violet-600",
     image: "/products/theater-agent.png",
-    bulletColor: "bg-cyan",
+    bulletColor: "bg-indigo-400",
+    imageFilter: "hue-rotate(40deg) saturate(1.2) brightness(0.95)",
+    imageOverlay: "from-indigo-600/30 via-transparent to-violet-900/40",
   },
   {
     title: "Hotel Front Desk Phone Agent",
@@ -94,9 +98,11 @@ const products: Product[] = [
     tags: ["AI Agent", "Chat Widget", "Hospitality", "Next.js"],
     status: "live",
     icon: MessageSquare,
-    gradient: "from-rose-400 to-pink-600",
+    gradient: "from-teal-400 to-emerald-600",
     image: "/products/hotel-front-desk-agent.png",
-    bulletColor: "bg-rose-400",
+    bulletColor: "bg-teal-400",
+    imageFilter: "hue-rotate(90deg) saturate(1.15) brightness(0.93)",
+    imageOverlay: "from-teal-600/25 via-transparent to-emerald-900/35",
   },
   {
     title: "Gift Cardy",
@@ -173,8 +179,16 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
           fill
           className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
           sizes="100vw"
+          style={product.imageFilter ? { filter: product.imageFilter } : undefined}
         />
+        {product.imageOverlay && (
+          <div className={`absolute inset-0 bg-gradient-to-br ${product.imageOverlay} mix-blend-overlay`} />
+        )}
         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent" />
+        {/* Floating icon badge */}
+        <div className={`absolute top-4 right-4 rounded-xl bg-gradient-to-br ${product.gradient} p-2.5 shadow-lg shadow-black/20`}>
+          <Icon size={18} className="text-white" />
+        </div>
       </div>
 
       {/* Content */}
