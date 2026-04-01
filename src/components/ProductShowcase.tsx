@@ -30,6 +30,24 @@ interface Product {
 
 const products: Product[] = [
   {
+    title: "AI Agent Team",
+    subtitle: "A multi-agent AI workforce that runs your business behind the scenes",
+    description:
+      "An orchestrated team of specialized AI agents, each with a distinct role. Zeke, the chief of staff, coordinates everything — sending emails, pulling CRM and PMS data, running web research, and managing Slack. Kelly handles social media content and scheduling. Dwight runs SEO analysis with Ahrefs and Search Console. Angela manages recruiting pipelines and applicant screening. Toby reconciles expenses and tracks spending. All connected to your real business tools, taking real action 24/7.",
+    highlights: [
+      "Zeke orchestrates across email, Slack, CRMs & PMS",
+      "Kelly drafts & schedules social content via Buffer",
+      "Dwight & Angela handle SEO and HR autonomously",
+      "Toby reconciles expenses & flags anomalies",
+    ],
+    tags: ["Multi-Agent", "Automation", "AI Workforce", "Chief of Staff"],
+    status: "live",
+    icon: BrainCircuit,
+    gradient: "from-yellow-400 to-orange-500",
+    image: "/products/zeke.png",
+    bulletColor: "bg-yellow-400",
+  },
+  {
     title: "Customer Service Phone Agent",
     subtitle: "AI-powered voice box office",
     description:
@@ -46,24 +64,6 @@ const products: Product[] = [
     gradient: "from-cyan to-blue-500",
     image: "/products/theater-agent.png",
     bulletColor: "bg-cyan",
-  },
-  {
-    title: "Zeke — AI Chief of Staff",
-    subtitle: "Your always-on executive assistant that runs your business tools",
-    description:
-      "A multi-agent AI chief of staff that integrates with your CRMs, PMS platforms, email, Slack, and more — taking real action on your behalf. From sending emails and running web research to pulling reports across HostAway, Cloudbeds, and Event Temple, Zeke orchestrates specialized agents for social media, SEO, recruiting, and accounting so nothing falls through the cracks.",
-    highlights: [
-      "Deep integrations with CRMs, PMS & business tools",
-      "Sends emails, Slack messages & runs web research",
-      "Specialized sub-agents for SEO, social, HR & accounting",
-      "Voice interface for hands-free business queries",
-    ],
-    tags: ["AI Agent", "Multi-Agent", "Automation", "Chief of Staff"],
-    status: "live",
-    icon: BrainCircuit,
-    gradient: "from-yellow-400 to-orange-500",
-    image: "/products/zeke.png",
-    bulletColor: "bg-yellow-400",
   },
   {
     title: "Customer Service Chat Agent",
