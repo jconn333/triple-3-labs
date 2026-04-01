@@ -10,6 +10,7 @@ import {
   FileSearch,
   ConciergeBell,
   MessageSquare,
+  BrainCircuit,
 } from "lucide-react";
 
 interface Product {
@@ -45,6 +46,24 @@ const products: Product[] = [
     gradient: "from-cyan to-blue-500",
     image: "/products/theater-agent.png",
     bulletColor: "bg-cyan",
+  },
+  {
+    title: "Zeke — AI Chief of Staff",
+    subtitle: "Your always-on executive assistant that runs your business tools",
+    description:
+      "A multi-agent AI chief of staff that integrates with your CRMs, PMS platforms, email, Slack, and more — taking real action on your behalf. From sending emails and running web research to pulling reports across HostAway, Cloudbeds, and Event Temple, Zeke orchestrates specialized agents for social media, SEO, recruiting, and accounting so nothing falls through the cracks.",
+    highlights: [
+      "Deep integrations with CRMs, PMS & business tools",
+      "Sends emails, Slack messages & runs web research",
+      "Specialized sub-agents for SEO, social, HR & accounting",
+      "Voice interface for hands-free business queries",
+    ],
+    tags: ["AI Agent", "Multi-Agent", "Automation", "Chief of Staff"],
+    status: "live",
+    icon: BrainCircuit,
+    gradient: "from-yellow-400 to-orange-500",
+    image: "/products/zeke.png",
+    bulletColor: "bg-yellow-400",
   },
   {
     title: "Customer Service Chat Agent",
