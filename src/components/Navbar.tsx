@@ -7,8 +7,9 @@ import Link from "next/link";
 import { LogoIcon } from "@/components/Logo";
 
 const navLinks = [
+  { label: "Agents", href: "/#agents" },
   { label: "Services", href: "/#services" },
-  { label: "Products", href: "/#products" },
+  { label: "Automation", href: "/#automation" },
   { label: "Process", href: "/#process" },
   { label: "Blog", href: "/blog" },
   { label: "Contact", href: "/#contact" },

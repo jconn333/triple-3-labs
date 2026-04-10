@@ -19,16 +19,6 @@ export default function Hero() {
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-5xl text-center">
         {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-8 inline-flex items-center gap-2 rounded-full border border-violet/30 bg-violet/10 px-4 py-1.5 text-sm text-violet-300"
-        >
-          <Sparkles size={14} />
-          AI-Powered Business Transformation
-        </motion.div>
-
         {/* Heading */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
@@ -49,7 +39,7 @@ export default function Hero() {
           style={{ fontFamily: "var(--font-space-grotesk)" }}
         >
           <span className="gradient-text font-semibold">
-            AI Agents + Automations
+            Hire AI. Not headcount.
           </span>
         </motion.p>
 
@@ -60,8 +50,9 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="mx-auto mb-10 max-w-xl text-base leading-relaxed text-white/50 sm:text-lg"
         >
-          We design, build, and deploy custom AI agents and automation systems
-          that eliminate bottlenecks and supercharge your operations.
+          We staff your business with AI agents that handle real work — managing
+          your inbox, running SEO audits, posting to social, handling support —
+          connected to your tools and working 24/7.
         </motion.p>
 
         {/* CTAs */}
@@ -72,10 +63,10 @@ export default function Hero() {
           className="flex flex-col items-center justify-center gap-4 sm:flex-row"
         >
           <a
-            href="#contact"
+            href="#agents"
             className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-violet to-purple px-8 py-4 text-base font-semibold text-white transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(124,58,237,0.5)]"
           >
-            <span className="relative z-10">Book a Discovery Call</span>
+            <span className="relative z-10">Meet the AI Office</span>
             <ArrowRight
               size={18}
               className="relative z-10 transition-transform group-hover:translate-x-1"

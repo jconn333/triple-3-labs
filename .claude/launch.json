@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/Users/jeffconn/.nvm/versions/node/v24.13.0/bin/npx",
+      "runtimeArgs": ["next", "dev"],
       "port": 3000
     }
   ]

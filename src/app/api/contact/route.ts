@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 import { scoreLeadWithAI } from "@/lib/ai/lead-scoring";
 import type { ContactFormData } from "@/lib/crm/types";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const contactSchema = z.object({
   name: z.string().min(1).max(100),
@@ -19,20 +18,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = contactSchema.parse(body) as ContactFormData;
-
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll(); },
-          setAll(cookiesToSet) {
-            try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); } catch {}
-          },
-        },
-      }
-    );
+    const supabase = createAdminClient();
 
     const nameParts = data.name.trim().split(/\s+/);
     const firstName = nameParts[0];
@@ -98,25 +84,47 @@ export async function POST(request: NextRequest) {
       description: `${data.name} submitted the contact form. Project: ${data.projectType}. Budget: ${data.budget || "not specified"}.`,
     });
 
-    // AI lead scoring (non-blocking)
-    scoreLeadWithAI(data)
-      .then(async (score) => {
-        await supabase
-          .from("contacts")
-          .update({ lead_score: score.score, lead_score_label: score.label, lead_score_reasoning: score.reasoning })
-          .eq("id", contact.id);
+    after(async () => {
+      try {
+        const score = await scoreLeadWithAI(data);
+        const backgroundSupabase = createAdminClient();
+        const results = await Promise.allSettled([
+          backgroundSupabase
+            .from("contacts")
+            .update({
+              lead_score: score.score,
+              lead_score_label: score.label,
+              lead_score_reasoning: score.reasoning,
+            })
+            .eq("id", contact.id)
+            .then(({ error }) => {
+              if (error) throw error;
+            }),
+          backgroundSupabase
+            .from("activities")
+            .insert({
+              contact_id: contact.id,
+              type: "ai_scoring",
+              title: `AI scored lead: ${score.score}/100 (${score.label})`,
+              description: score.reasoning,
+              metadata: score,
+            })
+            .then(({ error }) => {
+              if (error) throw error;
+            }),
+          sendSlackNotification(data, score),
+        ]);
 
-        await supabase.from("activities").insert({
-          contact_id: contact.id,
-          type: "ai_scoring",
-          title: `AI scored lead: ${score.score}/100 (${score.label})`,
-          description: score.reasoning,
-          metadata: score,
+        results.forEach((result, index) => {
+          if (result.status === "rejected") {
+            const label = ["contact score update", "AI scoring activity", "Slack notification"][index];
+            console.error(`${label} error:`, result.reason);
+          }
         });
-
-        await sendSlackNotification(data, score).catch(console.error);
-      })
-      .catch(console.error);
+      } catch (error) {
+        console.error("Post-submit contact processing error:", error);
+      }
+    });
 
     return NextResponse.json({ success: true, message: "Thank you! We'll be in touch soon." }, { status: 201 });
   } catch (error) {
@@ -136,8 +144,7 @@ async function sendSlackNotification(
   if (!webhookUrl) return;
 
   const emoji = score.label === "hot" ? "🔥" : score.label === "warm" ? "🟡" : "🔵";
-
-  await fetch(webhookUrl, {
+  const response = await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -155,4 +162,8 @@ async function sendSlackNotification(
       ],
     }),
   });
+
+  if (!response.ok) {
+    throw new Error(`Slack webhook failed with status ${response.status}`);
+  }
 }

@@ -3,14 +3,18 @@
 import { motion } from "framer-motion";
 
 const items = [
-  "AI Agents",
-  "Workflow Automation",
-  "Custom Chatbots",
-  "Data Pipelines",
-  "Process Optimization",
-  "Intelligent Systems",
-  "API Integrations",
-  "AI Strategy",
+  "Chief of Staff",
+  "Content Creator",
+  "SEO Specialist",
+  "Social Media Manager",
+  "Email Marketer",
+  "Ad Manager",
+  "Customer Support",
+  "Reputation Manager",
+  "Sales Development Rep",
+  "Meeting Assistant",
+  "Bookkeeper",
+  "Recruiter",
 ];
 
 export default function Marquee() {
