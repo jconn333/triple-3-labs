@@ -110,6 +110,15 @@ export async function DELETE(
     }
   }
 
+  const { error: aiLogsErr } = await supabase
+    .from("ai_agent_logs")
+    .delete()
+    .eq("contact_id", id);
+  if (aiLogsErr && aiLogsErr.code !== "42P01") {
+    console.error("Contact delete — ai_agent_logs cleanup failed:", aiLogsErr);
+    return NextResponse.json({ error: aiLogsErr.message }, { status: 500 });
+  }
+
   const { error: activitiesErr } = await supabase
     .from("activities")
     .delete()
