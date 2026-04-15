@@ -12,7 +12,7 @@ const formSchema = z.object({
   email: z.string().email("Valid email required"),
   company: z.string().max(100).optional(),
   phone: z.string().max(20).optional(),
-  message: z.string().min(10, "Tell us a bit more (10+ chars)").max(2000),
+  message: z.string().min(10, "Tell us a bit more (10+ chars)"),
 });
 
 type FormData = z.infer<typeof formSchema>;
