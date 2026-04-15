@@ -83,6 +83,25 @@ export default function PipelinePage() {
     }
   }, [deals, stages]);
 
+  const handleDeleteDeal = useCallback(async (deal: Deal) => {
+    const label = deal.name || "this lead";
+    if (!confirm(`Delete ${label}? This also removes the associated contact and activity history.`)) {
+      return;
+    }
+
+    const prevDeals = deals;
+    setDeals((current) => current.filter((d) => d.id !== deal.id));
+
+    try {
+      const res = await fetch(`/api/deals/${deal.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      toast.success("Lead deleted");
+    } catch {
+      setDeals(prevDeals);
+      toast.error("Failed to delete lead");
+    }
+  }, [deals]);
+
   if (loading) {
     return (
       <div className="flex gap-4 overflow-x-auto pb-4">
@@ -101,7 +120,14 @@ export default function PipelinePage() {
       <div className="flex gap-4 overflow-x-auto pb-4 -mx-8 px-8">
         {stages.map((stage) => {
           const stageDeals = deals.filter((d) => d.stage_id === stage.id);
-          return <PipelineColumn key={stage.id} stage={stage} deals={stageDeals} />;
+          return (
+            <PipelineColumn
+              key={stage.id}
+              stage={stage}
+              deals={stageDeals}
+              onDeleteDeal={handleDeleteDeal}
+            />
+          );
         })}
       </div>
       <DragOverlay>

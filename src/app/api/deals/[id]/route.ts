@@ -58,3 +58,47 @@ export async function PATCH(
 
   return NextResponse.json(data);
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+
+  // Look up the associated contact so we can clean it up as well
+  const { data: deal } = await supabase
+    .from("deals")
+    .select("contact_id")
+    .eq("id", id)
+    .single();
+
+  const contactId = deal?.contact_id as string | null | undefined;
+
+  // Remove activities tied to the deal and/or contact first (no FK cascade assumed)
+  if (contactId) {
+    await supabase.from("activities").delete().eq("contact_id", contactId);
+  } else {
+    await supabase.from("activities").delete().eq("deal_id", id);
+  }
+
+  const { error: dealError } = await supabase.from("deals").delete().eq("id", id);
+  if (dealError) {
+    return NextResponse.json({ error: dealError.message }, { status: 500 });
+  }
+
+  if (contactId) {
+    const { error: contactError } = await supabase
+      .from("contacts")
+      .delete()
+      .eq("id", contactId);
+    if (contactError) {
+      return NextResponse.json({ error: contactError.message }, { status: 500 });
+    }
+  }
+
+  return NextResponse.json({ success: true });
+}

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import {
   Mail, Phone, Building2, DollarSign, Sparkles, FileText,
-  Clock, ArrowRight, Copy, UserPlus, ExternalLink,
+  Clock, ArrowRight, Copy, UserPlus, ExternalLink, Trash2,
 } from "lucide-react";
 import { formatDate, formatRelativeTime, formatCurrency } from "@/lib/utils/format";
 import LeadScoreBadge from "@/components/admin/LeadScoreBadge";
@@ -24,6 +24,7 @@ export default function ContactDetailPage() {
   const [emailDraft, setEmailDraft] = useState<{ subject: string; body: string } | null>(null);
   const [scoring, setScoring] = useState(false);
   const [creatingAccount, setCreatingAccount] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchContact() {
@@ -118,6 +119,24 @@ export default function ContactDetailPage() {
       toast.error("Failed to create account");
     } finally {
       setCreatingAccount(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!contact) return;
+    const name = `${contact.first_name} ${contact.last_name}`.trim() || "this contact";
+    if (!confirm(`Delete ${name}? This removes the contact, all deals, and activity history. This cannot be undone.`)) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/contacts/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed");
+      toast.success("Contact deleted");
+      router.push("/admin/contacts");
+    } catch {
+      toast.error("Failed to delete contact");
+      setDeleting(false);
     }
   }
 
@@ -227,6 +246,11 @@ export default function ContactDetailPage() {
                 {creatingAccount ? "Creating..." : "Create Account"}
               </button>
             )}
+            <button onClick={handleDelete} disabled={deleting}
+              className="w-full flex items-center gap-2 rounded-lg bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50">
+              <Trash2 size={16} />
+              {deleting ? "Deleting..." : "Delete Contact"}
+            </button>
           </div>
 
           {/* Deals */}

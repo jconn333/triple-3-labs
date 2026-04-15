@@ -10,9 +10,10 @@ import type { Deal, PipelineStage } from "@/lib/crm/types";
 interface PipelineColumnProps {
   stage: PipelineStage;
   deals: Deal[];
+  onDeleteDeal?: (deal: Deal) => void;
 }
 
-export default function PipelineColumn({ stage, deals }: PipelineColumnProps) {
+export default function PipelineColumn({ stage, deals, onDeleteDeal }: PipelineColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
   const totalValue = deals.reduce((sum, d) => sum + (d.amount || 0), 0);
@@ -44,7 +45,9 @@ export default function PipelineColumn({ stage, deals }: PipelineColumnProps) {
             {deals.length === 0 ? (
               <p className="py-8 text-center text-xs text-white/20">No deals</p>
             ) : (
-              deals.map((deal) => <DealCard key={deal.id} deal={deal} />)
+              deals.map((deal) => (
+                <DealCard key={deal.id} deal={deal} onDelete={onDeleteDeal} />
+              ))
             )}
           </div>
         </SortableContext>

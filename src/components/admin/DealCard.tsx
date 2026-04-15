@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
+import { Trash2 } from "lucide-react";
 import { formatCurrency, formatRelativeTime } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import type { Deal } from "@/lib/crm/types";
@@ -10,9 +11,10 @@ import type { Deal } from "@/lib/crm/types";
 interface DealCardProps {
   deal: Deal;
   isDragOverlay?: boolean;
+  onDelete?: (deal: Deal) => void;
 }
 
-export default function DealCard({ deal, isDragOverlay }: DealCardProps) {
+export default function DealCard({ deal, isDragOverlay, onDelete }: DealCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: deal.id });
 
@@ -25,12 +27,27 @@ export default function DealCard({ deal, isDragOverlay }: DealCardProps) {
       {...attributes}
       {...listeners}
       className={cn(
-        "glass-card cursor-grab rounded-lg p-3 active:cursor-grabbing",
+        "glass-card group relative cursor-grab rounded-lg p-3 active:cursor-grabbing",
         isDragging && "opacity-30",
         isDragOverlay && "shadow-xl shadow-violet/20 rotate-2"
       )}
     >
-      <p className="text-sm font-medium text-white leading-tight">{deal.name}</p>
+      {onDelete && !isDragOverlay && (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(deal);
+          }}
+          aria-label="Delete lead"
+          className="absolute right-1.5 top-1.5 rounded p-1 text-white/30 opacity-0 transition hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100 focus:opacity-100"
+        >
+          <Trash2 size={12} />
+        </button>
+      )}
+
+      <p className="pr-5 text-sm font-medium text-white leading-tight">{deal.name}</p>
 
       {deal.amount && (
         <p className="mt-1 text-xs font-semibold text-emerald-400">
