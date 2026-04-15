@@ -12,9 +12,7 @@ const formSchema = z.object({
   email: z.string().email("Valid email required"),
   company: z.string().max(100).optional(),
   phone: z.string().max(20).optional(),
-  projectType: z.enum(["ai-agent", "automation", "consulting", "other"]),
   message: z.string().min(10, "Tell us a bit more (10+ chars)").max(2000),
-  budget: z.enum(["under-5k", "5k-15k", "15k-50k", "50k-plus"]).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -29,7 +27,6 @@ export default function ContactForm() {
     reset,
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { projectType: "ai-agent" },
   });
 
   async function onSubmit(data: FormData) {
@@ -132,30 +129,6 @@ export default function ContactForm() {
             className={inputClasses}
             placeholder="(555) 123-4567"
           />
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={labelClasses}>
-            Project Type <span className="text-red-400">*</span>
-          </label>
-          <select {...register("projectType")} className={inputClasses}>
-            <option value="ai-agent">AI Agent (Voice/Chat)</option>
-            <option value="automation">Workflow Automation</option>
-            <option value="consulting">AI Strategy & Consulting</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div>
-          <label className={labelClasses}>Budget Range</label>
-          <select {...register("budget")} className={inputClasses}>
-            <option value="">Select budget</option>
-            <option value="under-5k">Under $5K</option>
-            <option value="5k-15k">$5K - $15K</option>
-            <option value="15k-50k">$15K - $50K</option>
-            <option value="50k-plus">$50K+</option>
-          </select>
         </div>
       </div>
 

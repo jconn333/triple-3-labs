@@ -32,7 +32,7 @@ export async function scoreLeadWithAI(data: ContactFormData): Promise<LeadScore>
         max_tokens: 300,
         messages: [{
           role: "user",
-          content: `Score this lead:\n\nName: ${data.name}\nEmail: ${data.email}\nCompany: ${data.company || "Not provided"}\nProject Type: ${data.projectType}\nBudget: ${data.budget || "Not specified"}\nMessage: ${data.message}`,
+          content: `Score this lead:\n\nName: ${data.name}\nEmail: ${data.email}\nCompany: ${data.company || "Not provided"}\nPhone: ${data.phone || "Not provided"}\nMessage: ${data.message}`,
         }],
         system: SYSTEM_PROMPT,
       }),
@@ -53,22 +53,17 @@ export async function scoreLeadWithAI(data: ContactFormData): Promise<LeadScore>
 }
 
 function fallbackScoring(data: ContactFormData): LeadScore {
-  let score = 30;
-  if (data.budget === "50k-plus") score += 30;
-  else if (data.budget === "15k-50k") score += 25;
-  else if (data.budget === "5k-15k") score += 15;
-  else if (data.budget === "under-5k") score += 5;
+  let score = 40;
 
   const personalDomains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"];
   const emailDomain = data.email.split("@")[1]?.toLowerCase();
-  if (emailDomain && !personalDomains.includes(emailDomain)) score += 10;
-  if (data.projectType === "ai-agent") score += 10;
-  else if (data.projectType === "automation") score += 8;
-  if (data.message.length > 200) score += 10;
-  else if (data.message.length > 100) score += 5;
-  if (data.company) score += 5;
+  if (emailDomain && !personalDomains.includes(emailDomain)) score += 15;
+  if (data.message.length > 200) score += 15;
+  else if (data.message.length > 100) score += 8;
+  if (data.company) score += 10;
+  if (data.phone) score += 5;
 
   score = Math.min(100, score);
   const label = score >= 70 ? "hot" : score >= 40 ? "warm" : "cold";
-  return { score, label, reasoning: `Fallback scoring: Budget=${data.budget || "unspecified"}, ProjectType=${data.projectType}. AI scoring unavailable.` };
+  return { score, label, reasoning: `Fallback scoring based on email domain, message length, and company info. AI scoring unavailable.` };
 }

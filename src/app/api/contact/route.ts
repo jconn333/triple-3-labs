@@ -9,9 +9,7 @@ const contactSchema = z.object({
   email: z.string().email(),
   company: z.string().max(100).optional(),
   phone: z.string().max(20).optional(),
-  projectType: z.enum(["ai-agent", "automation", "consulting", "other"]),
   message: z.string().min(10).max(2000),
-  budget: z.enum(["under-5k", "5k-15k", "15k-50k", "50k-plus"]).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -33,8 +31,6 @@ export async function POST(request: NextRequest) {
         email: data.email,
         phone: data.phone || null,
         company: data.company || null,
-        project_type: data.projectType,
-        budget_range: data.budget || null,
         message: data.message,
         source: "contact_form",
       })
@@ -55,21 +51,13 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .single();
 
-    const budgetAmounts: Record<string, number> = {
-      "under-5k": 5000, "5k-15k": 10000, "15k-50k": 30000, "50k-plus": 75000,
-    };
-    const projectLabels: Record<string, string> = {
-      "ai-agent": "AI Agent", automation: "Automation", consulting: "Consulting", other: "Other",
-    };
-
     // Create deal
     const { data: deal } = await supabase
       .from("deals")
       .insert({
-        name: `${data.name} — ${projectLabels[data.projectType] || data.projectType}`,
+        name: `${data.name} — New Lead`,
         stage_id: firstStage?.id,
         contact_id: contact.id,
-        amount: data.budget ? budgetAmounts[data.budget] : null,
         description: data.message,
       })
       .select()
@@ -81,7 +69,7 @@ export async function POST(request: NextRequest) {
       deal_id: deal?.id,
       type: "form_submission",
       title: "Contact form submitted",
-      description: `${data.name} submitted the contact form. Project: ${data.projectType}. Budget: ${data.budget || "not specified"}.`,
+      description: `${data.name} submitted the contact form.`,
     });
 
     after(async () => {
@@ -153,8 +141,7 @@ async function sendSlackNotification(
         { type: "section", fields: [
           { type: "mrkdwn", text: `*Email:*\n${data.email}` },
           { type: "mrkdwn", text: `*Company:*\n${data.company || "N/A"}` },
-          { type: "mrkdwn", text: `*Project:*\n${data.projectType}` },
-          { type: "mrkdwn", text: `*Budget:*\n${data.budget || "N/A"}` },
+          { type: "mrkdwn", text: `*Phone:*\n${data.phone || "N/A"}` },
           { type: "mrkdwn", text: `*Score:*\n${score.score}/100 (${score.label})` },
         ]},
         { type: "section", text: { type: "mrkdwn", text: `*Message:*\n>${data.message.slice(0, 500)}` } },

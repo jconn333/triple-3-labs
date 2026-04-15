@@ -76,10 +76,9 @@ export default function ContactDetailPage() {
           contactData: {
             name: `${contact.first_name} ${contact.last_name}`,
             email: contact.email,
-            company: contact.company,
-            projectType: contact.project_type || "other",
+            company: contact.company ?? undefined,
+            phone: contact.phone ?? undefined,
             message: contact.message || "",
-            budget: contact.budget_range,
           },
         }),
       });

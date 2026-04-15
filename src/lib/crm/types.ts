@@ -122,9 +122,7 @@ export interface ContactFormData {
   email: string;
   company?: string;
   phone?: string;
-  projectType: "ai-agent" | "automation" | "consulting" | "other";
   message: string;
-  budget?: "under-5k" | "5k-15k" | "15k-50k" | "50k-plus";
 }
 
 export interface LeadScore {
