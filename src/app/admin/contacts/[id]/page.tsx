@@ -131,11 +131,15 @@ export default function ContactDetailPage() {
     setDeleting(true);
     try {
       const res = await fetch(`/api/contacts/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed");
+      }
       toast.success("Contact deleted");
       router.push("/admin/contacts");
-    } catch {
-      toast.error("Failed to delete contact");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to delete contact";
+      toast.error(`Failed to delete contact: ${msg}`);
       setDeleting(false);
     }
   }

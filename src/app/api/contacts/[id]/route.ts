@@ -81,12 +81,56 @@ export async function DELETE(
 
   const { id } = await params;
 
-  // Remove dependents first (no FK cascade assumed)
-  await supabase.from("activities").delete().eq("contact_id", id);
-  await supabase.from("deals").delete().eq("contact_id", id);
+  // Look up any linked account so we can clean up its dependents too
+  const { data: accounts } = await supabase
+    .from("accounts")
+    .select("id")
+    .eq("contact_id", id);
+  const accountIds = (accounts || []).map((a) => a.id);
+
+  // Remove dependents first (no FK cascade assumed).
+  // Order matters: contracts -> accounts -> activities -> deals -> contact.
+  if (accountIds.length > 0) {
+    const { error: contractsErr } = await supabase
+      .from("contracts")
+      .delete()
+      .in("account_id", accountIds);
+    if (contractsErr && contractsErr.code !== "42P01") {
+      console.error("Contact delete — contracts cleanup failed:", contractsErr);
+      return NextResponse.json({ error: contractsErr.message }, { status: 500 });
+    }
+
+    const { error: accountsErr } = await supabase
+      .from("accounts")
+      .delete()
+      .in("id", accountIds);
+    if (accountsErr) {
+      console.error("Contact delete — accounts cleanup failed:", accountsErr);
+      return NextResponse.json({ error: accountsErr.message }, { status: 500 });
+    }
+  }
+
+  const { error: activitiesErr } = await supabase
+    .from("activities")
+    .delete()
+    .eq("contact_id", id);
+  if (activitiesErr) {
+    console.error("Contact delete — activities cleanup failed:", activitiesErr);
+    return NextResponse.json({ error: activitiesErr.message }, { status: 500 });
+  }
+
+  const { error: dealsErr } = await supabase
+    .from("deals")
+    .delete()
+    .eq("contact_id", id);
+  if (dealsErr) {
+    console.error("Contact delete — deals cleanup failed:", dealsErr);
+    return NextResponse.json({ error: dealsErr.message }, { status: 500 });
+  }
 
   const { error } = await supabase.from("contacts").delete().eq("id", id);
   if (error) {
+    console.error("Contact delete — contact delete failed:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
