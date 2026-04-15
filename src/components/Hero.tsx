@@ -73,12 +73,6 @@ export default function Hero() {
             />
             <div className="absolute inset-0 bg-gradient-to-r from-purple to-cyan opacity-0 transition-opacity group-hover:opacity-100" />
           </a>
-          <a
-            href="#products"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-8 py-4 text-base font-medium text-white/80 transition-all hover:border-white/30 hover:bg-white/5 hover:text-white"
-          >
-            View Our Work
-          </a>
         </motion.div>
 
         {/* Scroll indicator */}
