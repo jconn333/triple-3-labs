@@ -101,11 +101,12 @@ export async function POST(request: NextRequest) {
               if (error) throw error;
             }),
           sendSlackNotification(data, score),
+          sendEmailNotification(data, score),
         ]);
 
         results.forEach((result, index) => {
           if (result.status === "rejected") {
-            const label = ["contact score update", "AI scoring activity", "Slack notification"][index];
+            const label = ["contact score update", "AI scoring activity", "Slack notification", "Email notification"][index];
             console.error(`${label} error:`, result.reason);
           }
         });
@@ -152,5 +153,55 @@ async function sendSlackNotification(
 
   if (!response.ok) {
     throw new Error(`Slack webhook failed with status ${response.status}`);
+  }
+}
+
+async function sendEmailNotification(
+  data: ContactFormData,
+  score: { score: number; label: string; reasoning: string }
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const to = "jeff@amishcountrytheater.com";
+  const from = process.env.RESEND_FROM || "Triple 3 Labs <onboarding@resend.dev>";
+  const emoji = score.label === "hot" ? "🔥" : score.label === "warm" ? "🟡" : "🔵";
+  const subject = `${emoji} New Lead: ${data.name} (${score.score}/100 ${score.label})`;
+
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const html = `
+    <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px;">
+      <h2 style="margin-bottom: 8px;">${emoji} New Lead: ${esc(data.name)}</h2>
+      <p style="color:#666; margin-top:0;">Score: <strong>${score.score}/100</strong> (${score.label})</p>
+      <table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+        <tr><td style="padding:6px 0; color:#666;">Email</td><td style="padding:6px 0;"><a href="mailto:${esc(data.email)}">${esc(data.email)}</a></td></tr>
+        <tr><td style="padding:6px 0; color:#666;">Company</td><td style="padding:6px 0;">${esc(data.company || "N/A")}</td></tr>
+        <tr><td style="padding:6px 0; color:#666;">Phone</td><td style="padding:6px 0;">${esc(data.phone || "N/A")}</td></tr>
+      </table>
+      <div style="background:#f6f6f6; padding:12px; border-radius:6px; white-space:pre-wrap;">${esc(data.message)}</div>
+      <p style="color:#888; font-size:12px; margin-top:16px;"><em>AI reasoning: ${esc(score.reasoning)}</em></p>
+    </div>
+  `;
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      reply_to: data.email,
+      subject,
+      html,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Resend failed ${response.status}: ${body}`);
   }
 }
