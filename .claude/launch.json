@@ -2,10 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "dev",
+      "name": "triple-3-labs",
       "runtimeExecutable": "/Users/jeffconn/.nvm/versions/node/v24.13.0/bin/npx",
       "runtimeArgs": ["next", "dev"],
-      "port": 3000
+      "port": 3000,
+      "autoPort": true
     }
   ]
 }
