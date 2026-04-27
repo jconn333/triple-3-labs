@@ -427,8 +427,8 @@ export default function MeetTheOffice() {
             className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl"
             style={{ fontFamily: "var(--font-space-grotesk)" }}
           >
-            Hire the team.{" "}
-            <span className="gradient-text">Skip the overhead.</span>
+            Specialist agents.{" "}
+            <span className="gradient-text">Ready on day one.</span>
           </h2>
           <p className="mx-auto max-w-3xl text-lg text-white/50 leading-relaxed">
             Each agent is a specialist — trained for a specific role, connected to
@@ -447,9 +447,9 @@ export default function MeetTheOffice() {
         >
           {[
             { value: "24/7", label: "Availability" },
-            { value: "90%+", label: "Margin vs. hiring" },
             { value: "Day 1", label: "Productive" },
-            { value: "$0", label: "Benefits & turnover" },
+            { value: "Instant", label: "Scales with demand" },
+            { value: "Fixed", label: "Predictable monthly cost" },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
               <p

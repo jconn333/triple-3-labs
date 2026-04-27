@@ -74,7 +74,7 @@ const discountTiers = [
 const roiStats = [
   { number: "80%", description: "of callers hang up rather than leave a voicemail" },
   { number: "24/7", description: "coverage vs. business hours with a human receptionist" },
-  { number: "~$3,500/mo", description: "average cost of a full-time human receptionist" },
+  { number: "~$3,500/mo", description: "average cost of after-hours coverage with live answering" },
 ];
 
 const includedBoxes = [

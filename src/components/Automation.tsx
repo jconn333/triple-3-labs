@@ -79,17 +79,17 @@ export default function Automation() {
           className="mb-6 text-center"
         >
           <span className="mb-4 inline-block text-sm font-medium uppercase tracking-widest text-cyan-400">
-            Kill Your Software Stack
+            Simplify Your Software Stack
           </span>
           <h2
             className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl"
             style={{ fontFamily: "var(--font-space-grotesk)" }}
           >
-            The SaaS era is{" "}
-            <span className="gradient-text">ending.</span>
+            Replace your expensive{" "}
+            <span className="gradient-text">software.</span>
           </h2>
           <p className="mx-auto max-w-3xl text-lg text-white/50 leading-relaxed">
-            For decades, software companies have charged thousands of dollars a month for tools that do one thing. AI can now replicate that functionality — customized to your business, connected to your data — for a fraction of the price. The companies that figure this out first win.
+            You&apos;re paying for ten different tools that each do one thing. A single AI agent can cover the same ground — customized to your business, connected to your data — for a fraction of the cost.
           </p>
         </motion.div>
 
@@ -149,7 +149,7 @@ export default function Automation() {
               {/* AI solution */}
               <div className="border-b border-white/5 p-6 md:border-b-0 md:border-r">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/30">
-                  AI Replacement
+                  AI Alternative
                 </p>
                 <div className="flex items-start gap-2">
                   <Check size={16} className="mt-0.5 flex-shrink-0 text-emerald-400" />
@@ -181,13 +181,13 @@ export default function Automation() {
           className="mt-16 text-center"
         >
           <p className="mb-3 text-lg text-white/40">
-            Ready to cut your software bill?
+            Ready to simplify your stack?
           </p>
           <a
             href="#contact"
             className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-violet to-purple px-8 py-4 text-base font-semibold text-white transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(124,58,237,0.5)]"
           >
-            <span className="relative z-10">See What We Can Replace</span>
+            <span className="relative z-10">See What We Can Consolidate</span>
             <ArrowRight
               size={18}
               className="relative z-10 transition-transform group-hover:translate-x-1"

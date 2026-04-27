@@ -5,7 +5,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-6">
+    <section className="relative flex min-h-[75vh] items-center justify-center overflow-hidden px-6">
       {/* Animated background orbs */}
       <div className="pointer-events-none absolute inset-0">
         <div className="animate-float-slow absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-violet/20 blur-[128px]" />
@@ -39,7 +39,7 @@ export default function Hero() {
           style={{ fontFamily: "var(--font-space-grotesk)" }}
         >
           <span className="gradient-text font-semibold">
-            Hire AI. Not headcount.
+            Your team&apos;s unfair advantage.
           </span>
         </motion.p>
 
@@ -50,9 +50,9 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="mx-auto mb-10 max-w-xl text-base leading-relaxed text-white/50 sm:text-lg"
         >
-          We staff your business with AI agents that handle real work — managing
-          your inbox, running SEO audits, posting to social, handling support —
-          connected to your tools and working 24/7.
+          AI agents that handle the busywork — managing your inbox, running
+          SEO audits, posting to social, handling support — so your team can
+          focus on what actually moves the needle.
         </motion.p>
 
         {/* CTAs */}
@@ -80,7 +80,7 @@ export default function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.5 }}
-          className="mt-20 flex flex-col items-center gap-2"
+          className="mt-10 flex flex-col items-center gap-2"
         >
           <span className="text-xs uppercase tracking-widest text-white/30">
             Scroll to explore
