@@ -9,7 +9,6 @@ const realEstate: VerticalConfig = {
       "AI agents built for real estate agencies — automate lead follow-up, listing management, showing coordination, and client communication so your agents can focus on closing deals.",
   },
   hero: {
-    badge: "Built for Real Estate",
     headline: "Triple 3 Labs",
     headlineAccent: "Your brokerage's unfair advantage.",
     subheading:
@@ -32,13 +31,6 @@ const realEstate: VerticalConfig = {
     "Recruiter",
     "Content Creator",
   ],
-  whyAgents: {
-    tagline: "The unfair advantage",
-    headlineWhite: "The roles that are",
-    headlineAccent: "hardest to fill — handled.",
-    description:
-      "Always on. Always consistent. Instantly scalable. Our AI agents fill the gaps in your brokerage — covering after-hours inquiries, weekend showings, and overflow so your team never misses a lead.",
-  },
   agents: {
     sectionLabel: "Your AI Real Estate Team",
     headline: "Specialist agents.",

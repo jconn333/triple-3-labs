@@ -106,18 +106,6 @@ export default function VerticalPage({ config }: { config: VerticalConfig }) {
         </div>
         <div className="grid-pattern pointer-events-none absolute inset-0" />
         <div className="relative z-10 mx-auto max-w-5xl text-center">
-          {config.hero.badge && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="mb-6"
-            >
-              <span className="inline-block rounded-full border border-violet/30 bg-violet/10 px-4 py-1.5 text-sm font-medium text-violet-300">
-                {config.hero.badge}
-              </span>
-            </motion.div>
-          )}
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -201,39 +189,6 @@ export default function VerticalPage({ config }: { config: VerticalConfig }) {
           ))}
         </div>
       </motion.section>
-
-      {/* ── Why Agents ───────────────────────────────────────────── */}
-      <section className="relative overflow-hidden px-6 pb-16 pt-8">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet/5 blur-[120px]" />
-        </div>
-        <div className="relative z-10 mx-auto max-w-5xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-            className="text-center"
-          >
-            <p className="mb-6 text-sm font-semibold uppercase tracking-[0.3em] text-violet">
-              {config.whyAgents.tagline}
-            </p>
-            <h2
-              className="mb-8 text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl md:text-7xl"
-              style={{ fontFamily: "var(--font-space-grotesk)" }}
-            >
-              <span className="text-white">{config.whyAgents.headlineWhite}</span>
-              <br />
-              <span className="gradient-text">
-                {config.whyAgents.headlineAccent}
-              </span>
-            </h2>
-            <p className="mx-auto max-w-2xl text-lg leading-relaxed text-white/50 sm:text-xl">
-              {config.whyAgents.description}
-            </p>
-          </motion.div>
-        </div>
-      </section>
 
       {/* ── Meet the AI Team ─────────────────────────────────────── */}
       <section id="agents" className="relative px-6 py-24">

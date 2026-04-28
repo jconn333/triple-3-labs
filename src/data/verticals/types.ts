@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
 export interface VerticalHero {
-  badge?: string;
   headline: string;
   headlineAccent: string;
   subheading: string;
@@ -55,12 +54,6 @@ export interface VerticalConfig {
   };
   hero: VerticalHero;
   marqueeItems: string[];
-  whyAgents: {
-    tagline: string;
-    headlineWhite: string;
-    headlineAccent: string;
-    description: string;
-  };
   agents: {
     sectionLabel: string;
     headline: string;
