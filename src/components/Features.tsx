@@ -1,50 +1,43 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Bot, Zap, Workflow, Brain, Layers, LineChart } from "lucide-react";
+import { Zap, FileText, Star, UserPlus, CalendarClock } from "lucide-react";
 
 const features = [
   {
-    icon: Bot,
-    title: "Custom AI Agents",
+    icon: Zap,
+    title: "Speed-to-Lead Bot",
     description:
-      "Purpose-built AI agents that handle complex tasks, make decisions, and work 24/7 without fatigue.",
+      "Respond to every new lead within seconds — qualify, book, and route them automatically before your competition even sees the inquiry.",
     gradient: "from-violet to-purple",
   },
   {
-    icon: Workflow,
-    title: "Workflow Automation",
+    icon: FileText,
+    title: "Invoice Follow-Up System",
     description:
-      "End-to-end automation pipelines that eliminate repetitive tasks and reduce human error to zero.",
+      "Stop chasing payments. Automated, polite, persistent reminders that recover outstanding invoices and shorten your cash cycle.",
     gradient: "from-cyan to-blue-500",
   },
   {
-    icon: Brain,
-    title: "AI Strategy & Consulting",
+    icon: Star,
+    title: "Review Request Automation",
     description:
-      "Strategic roadmaps to identify high-impact AI opportunities and maximize your ROI.",
-    gradient: "from-pink to-rose-500",
-  },
-  {
-    icon: Zap,
-    title: "System Integrations",
-    description:
-      "Seamlessly connect your existing tools, APIs, and databases into one intelligent ecosystem.",
+      "Turn happy customers into 5-star reviews on autopilot. Triggered at the perfect moment in the customer journey, every time.",
     gradient: "from-amber-400 to-orange-500",
   },
   {
-    icon: Layers,
-    title: "Full-Stack AI Products",
+    icon: UserPlus,
+    title: "Client Onboarding Sequence",
     description:
-      "From concept to deployment — complete AI-powered products built with modern tech stacks.",
-    gradient: "from-emerald-400 to-green-600",
+      "A polished, end-to-end onboarding flow that collects info, sends welcome materials, and gets new clients live without manual work.",
+    gradient: "from-pink to-rose-500",
   },
   {
-    icon: LineChart,
-    title: "Analytics & Optimization",
+    icon: CalendarClock,
+    title: "Appointment No-Show Recovery",
     description:
-      "Data-driven insights and continuous optimization to keep your AI systems performing at peak.",
-    gradient: "from-violet to-cyan",
+      "Smart reminders, easy reschedules, and instant follow-ups that recover missed appointments and protect your calendar revenue.",
+    gradient: "from-emerald-400 to-green-600",
   },
 ];
 
@@ -82,18 +75,17 @@ export default function Features() {
           className="mb-20 text-center"
         >
           <span className="mb-4 inline-block text-sm font-medium uppercase tracking-widest text-violet-400">
-            What We Do
+            What We Build
           </span>
           <h2
             className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl"
             style={{ fontFamily: "var(--font-space-grotesk)" }}
           >
-            Build Smarter.{" "}
-            <span className="gradient-text">Scale Faster.</span>
+            AI systems that{" "}
+            <span className="gradient-text">print money.</span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-white/50">
-            We combine cutting-edge AI with battle-tested automation to create
-            systems that work harder than your competition.
+            Not flashy. Not theoretical. The boring, consistent automations that move revenue — built for your business in under a week.
           </p>
         </motion.div>
 
