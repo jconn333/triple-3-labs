@@ -11,7 +11,7 @@ const navLinks = [
   { label: "Services", href: "/#services" },
   { label: "Process", href: "/#process" },
   { label: "About", href: "/about" },
-  { label: "Blog", href: "/blog" },
+  { label: "Case Studies", href: "/blog", highlight: true },
   { label: "Contact", href: "/#contact" },
 ];
 
@@ -47,7 +47,16 @@ export default function Navbar() {
 
         {/* Desktop links */}
         <div className="hidden items-center gap-8 md:flex">
-          {navLinks.map((link) => (
+          {navLinks.map((link) =>
+            link.highlight ? (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="rounded-full border border-violet-500/40 bg-violet-500/10 px-4 py-1.5 text-sm font-medium text-violet-200 transition-all hover:border-violet-400/70 hover:bg-violet-500/20 hover:text-white hover:shadow-[0_0_16px_rgba(124,58,237,0.35)]"
+              >
+                {link.label}
+              </Link>
+            ) : (
               <Link
                 key={link.label}
                 href={link.href}
@@ -56,7 +65,8 @@ export default function Navbar() {
                 {link.label}
                 <span className="absolute -bottom-1 left-0 h-px w-0 bg-gradient-to-r from-violet to-cyan transition-all duration-300 hover:w-full" />
               </Link>
-          ))}
+            )
+          )}
           <Link
             href="/admin/login"
             className="flex items-center gap-1.5 text-sm text-white/60 transition-colors hover:text-white"
@@ -96,7 +106,11 @@ export default function Navbar() {
                     key={link.label}
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
-                    className="rounded-lg px-4 py-3 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                    className={
+                      link.highlight
+                        ? "rounded-lg border border-violet-500/40 bg-violet-500/10 px-4 py-3 text-sm font-medium text-violet-200 transition-colors hover:bg-violet-500/20 hover:text-white"
+                        : "rounded-lg px-4 py-3 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                    }
                   >
                     {link.label}
                   </Link>
