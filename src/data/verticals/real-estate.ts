@@ -311,13 +311,13 @@ const realEstate: VerticalConfig = {
         gradient: "from-emerald-400 to-green-600",
       },
       {
-        category: "Review Management",
-        software: "BirdEye / Podium",
-        softwareCost: "$200–$400/mo",
+        category: "Reputation Management",
+        software: "BirdEye / Podium / Reputation.com",
+        softwareCost: "$300–$1,500/mo",
         aiSolution:
-          "AI reputation agent — requests reviews after close, drafts responses, monitors all platforms 24/7",
-        badge: "Automated review requests",
-        gradient: "from-amber-400 to-orange-500",
+          "AI reputation agent — monitors your Google Business Profile, responds to positive and negative reviews, answers public Q&A, and compounds your local SEO authority",
+        badge: "24/7 GBP monitoring",
+        gradient: "from-teal-400 to-cyan-500",
       },
       {
         category: "Email Marketing & Drip",

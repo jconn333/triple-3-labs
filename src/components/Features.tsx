@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Zap, FileText, Star, UserPlus, CalendarClock } from "lucide-react";
+import { Zap, FileText, Star, UserPlus, CalendarClock, MessageCircle } from "lucide-react";
 
 const features = [
   {
@@ -38,6 +38,13 @@ const features = [
     description:
       "Smart reminders, easy reschedules, and instant follow-ups that recover missed appointments and protect your calendar revenue.",
     gradient: "from-emerald-400 to-green-600",
+  },
+  {
+    icon: MessageCircle,
+    title: "Reputation Management",
+    description:
+      "Monitors your Google Business Profile 24/7, drafts replies to positive and negative reviews, and answers public Q&A — compounding your local SEO authority with every response.",
+    gradient: "from-teal-400 to-cyan-500",
   },
 ];
 

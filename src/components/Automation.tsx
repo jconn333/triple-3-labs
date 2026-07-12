@@ -37,6 +37,14 @@ const comparisons = [
     gradient: "from-emerald-400 to-green-600",
   },
   {
+    category: "Reputation Management",
+    software: "Birdeye / Podium / Reputation.com",
+    softwareCost: "$300–$1,500/mo",
+    aiSolution: "AI reputation agent — monitors your Google Business Profile, drafts replies to positive and negative reviews, answers public Q&A, and compounds your local SEO authority",
+    badge: "24/7 GBP monitoring",
+    gradient: "from-teal-400 to-cyan-500",
+  },
+  {
     category: "Customer Support",
     software: "Zendesk / Intercom",
     softwareCost: "$55–$150/seat/mo",
