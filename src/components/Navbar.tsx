@@ -52,7 +52,7 @@ export default function Navbar() {
               <Link
                 key={link.label}
                 href={link.href}
-                className="rounded-full border border-violet-500/40 bg-violet-500/10 px-4 py-1.5 text-sm font-medium text-violet-200 transition-all hover:border-violet-400/70 hover:bg-violet-500/20 hover:text-white hover:shadow-[0_0_16px_rgba(124,58,237,0.35)]"
+                className="gradient-text text-sm font-semibold transition-opacity hover:opacity-80"
               >
                 {link.label}
               </Link>
@@ -108,7 +108,7 @@ export default function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className={
                       link.highlight
-                        ? "rounded-lg border border-violet-500/40 bg-violet-500/10 px-4 py-3 text-sm font-medium text-violet-200 transition-colors hover:bg-violet-500/20 hover:text-white"
+                        ? "gradient-text rounded-lg px-4 py-3 text-sm font-semibold transition-opacity hover:opacity-80"
                         : "rounded-lg px-4 py-3 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
                     }
                   >
