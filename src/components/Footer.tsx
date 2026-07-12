@@ -25,12 +25,6 @@ export default function Footer() {
               Services
             </Link>
             <Link
-              href="/#products"
-              className="text-sm text-white/40 transition-colors hover:text-white/70"
-            >
-              Products
-            </Link>
-            <Link
               href="/#process"
               className="text-sm text-white/40 transition-colors hover:text-white/70"
             >

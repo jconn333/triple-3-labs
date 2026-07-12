@@ -1,6 +1,10 @@
 import type { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog";
 
+// Regenerate the sitemap hourly so posts published via the admin/DB (no rebuild)
+// still show up for crawlers without waiting for the next deploy.
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const posts = await getAllPosts();
 

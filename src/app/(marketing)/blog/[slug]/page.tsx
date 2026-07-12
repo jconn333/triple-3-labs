@@ -12,6 +12,19 @@ export const revalidate = 60;
 // Allow slugs not present at build time to be rendered on first request
 export const dynamicParams = true;
 
+// Lazy-load in-body images so a long post doesn't download every screenshot up
+// front. The first image stays eager to protect the largest-contentful-paint.
+function withLazyImages(html: string): string {
+  let first = true;
+  return html.replace(/<img\b/gi, () => {
+    if (first) {
+      first = false;
+      return '<img decoding="async"';
+    }
+    return '<img loading="lazy" decoding="async"';
+  });
+}
+
 export async function generateStaticParams() {
   const slugs = await getAllPostSlugs();
   return slugs.map((slug) => ({ slug }));
@@ -108,7 +121,7 @@ export default async function BlogPostPage({
 
           <div
             className="blog-prose"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: withLazyImages(post.content) }}
           />
         </div>
       </article>

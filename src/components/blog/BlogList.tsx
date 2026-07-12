@@ -16,6 +16,7 @@ interface BlogPostMeta {
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
+    timeZone: "UTC",
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -55,6 +56,8 @@ export default function BlogList({ posts }: { posts: BlogPostMeta[] }) {
                     <img
                       src={post.image}
                       alt={post.title}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />

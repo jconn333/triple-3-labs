@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 interface LogoProps {
   size?: number;
   className?: string;
@@ -7,6 +9,11 @@ interface LogoProps {
 }
 
 export function LogoIcon({ size = 36, className = "" }: LogoProps) {
+  // Unique per-instance IDs so multiple logos (navbar + footer) don't collide.
+  const uid = useId();
+  const gradId = `logo-grad-${uid}`;
+  const gradId2 = `logo-grad-2-${uid}`;
+
   return (
     <svg
       width={size}
@@ -17,12 +24,12 @@ export function LogoIcon({ size = 36, className = "" }: LogoProps) {
       className={className}
     >
       <defs>
-        <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#7c3aed" />
           <stop offset="50%" stopColor="#06b6d4" />
           <stop offset="100%" stopColor="#f472b6" />
         </linearGradient>
-        <linearGradient id="logo-grad-2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id={gradId2} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#a855f7" />
           <stop offset="100%" stopColor="#06b6d4" />
         </linearGradient>
@@ -36,7 +43,7 @@ export function LogoIcon({ size = 36, className = "" }: LogoProps) {
         height="96"
         rx="22"
         fill="#0a0a1a"
-        stroke="url(#logo-grad)"
+        stroke={`url(#${gradId})`}
         strokeWidth="2"
       />
 
@@ -61,7 +68,7 @@ export function LogoIcon({ size = 36, className = "" }: LogoProps) {
         fontFamily="ui-rounded, system-ui, sans-serif"
         fontSize="62"
         fontWeight="800"
-        fill="url(#logo-grad-2)"
+        fill={`url(#${gradId2})`}
         opacity="0.6"
       >
         3
@@ -74,7 +81,7 @@ export function LogoIcon({ size = 36, className = "" }: LogoProps) {
         fontFamily="ui-rounded, system-ui, sans-serif"
         fontSize="62"
         fontWeight="800"
-        fill="url(#logo-grad)"
+        fill={`url(#${gradId})`}
       >
         3
       </text>
