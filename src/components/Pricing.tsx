@@ -238,6 +238,11 @@ export default function Pricing() {
                 <span className="ml-1 text-sm text-white/30">/mo</span>
               </div>
 
+              {/* API usage note */}
+              <p className="mb-2 text-xs text-white/30">
+                + applicable API usage
+              </p>
+
               {/* Subtitle */}
               <p className="mb-4 text-sm text-white/35">{tier.subtitle}</p>
 
