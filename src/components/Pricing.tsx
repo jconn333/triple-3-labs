@@ -11,11 +11,10 @@ const pricingTiers = [
     price: "499",
     subtitle: "For businesses adding their first AI agent",
     featured: false,
-    overage: "$0.25/min",
+    overage: "",
     features: [
       { text: "1 custom AI agent", highlight: true },
       { text: "Works across chat, email & web", highlight: true },
-      { text: "250 included voice minutes", highlight: false },
       { text: "24/7 availability", highlight: false },
       { text: "FAQ & knowledge base (50 entries)", highlight: false },
       { text: "Conversation logs & transcripts", highlight: false },
@@ -269,9 +268,11 @@ export default function Pricing() {
               </ul>
 
               {/* Overage tag */}
-              <span className="inline-block rounded-lg border border-cyan/25 bg-cyan/[0.08] px-3 py-1 text-xs font-semibold text-cyan-300">
-                Voice overage: {tier.overage}
-              </span>
+              {tier.overage && (
+                <span className="inline-block rounded-lg border border-cyan/25 bg-cyan/[0.08] px-3 py-1 text-xs font-semibold text-cyan-300">
+                  Voice overage: {tier.overage}
+                </span>
+              )}
 
               {/* Hover glow */}
               <div
