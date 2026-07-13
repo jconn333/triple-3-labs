@@ -5,7 +5,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative flex min-h-[75vh] items-center justify-center overflow-hidden px-6">
+    <section className="relative flex min-h-[75vh] items-center justify-center overflow-hidden px-6 pt-28 md:pt-32">
       {/* Animated background orbs */}
       <div className="pointer-events-none absolute inset-0">
         <div className="animate-float-slow absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-violet/20 blur-[128px]" />
