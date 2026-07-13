@@ -4,9 +4,9 @@ import Pricing from "@/components/Pricing";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "AI Voice Agent Pricing — Triple 3 Labs",
+  title: "AI Agent Pricing — Triple 3 Labs",
   description:
-    "Custom AI voice agent packages starting at $499/mo. 24/7 inbound call handling, appointment booking, live transfers, and more.",
+    "Custom AI agent packages starting at $499/mo — support, scheduling, back-office, and more, built and managed for you. Chat, email, web, and voice included.",
 };
 
 export default function PricingPage() {

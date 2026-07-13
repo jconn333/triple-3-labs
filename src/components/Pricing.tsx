@@ -9,16 +9,16 @@ const pricingTiers = [
   {
     name: "Essentials",
     price: "499",
-    subtitle: "For businesses starting with AI call handling",
+    subtitle: "For businesses adding their first AI agent",
     featured: false,
     overage: "$0.25/min",
     features: [
-      { text: "1 custom AI voice agent", highlight: true },
-      { text: "250 included minutes", highlight: true },
-      { text: "1 dedicated phone number", highlight: false },
-      { text: "24/7 inbound call handling", highlight: false },
+      { text: "1 custom AI agent", highlight: true },
+      { text: "Works across chat, email & web", highlight: true },
+      { text: "250 included voice minutes", highlight: false },
+      { text: "24/7 availability", highlight: false },
       { text: "FAQ & knowledge base (50 entries)", highlight: false },
-      { text: "Call recordings & transcripts", highlight: false },
+      { text: "Conversation logs & transcripts", highlight: false },
       { text: "Weekly email summary", highlight: false },
       { text: "Email & chat support", highlight: false },
     ],
@@ -30,11 +30,11 @@ const pricingTiers = [
     featured: true,
     overage: "$0.20/min",
     features: [
-      { text: "1 custom AI voice agent", highlight: true },
-      { text: "500 included minutes", highlight: true },
-      { text: "1 dedicated phone number", highlight: false },
-      { text: "24/7 inbound call handling", highlight: false },
-      { text: "Live call transfer to staff", highlight: false },
+      { text: "1 custom AI agent", highlight: true },
+      { text: "Chat, email, web & voice channels", highlight: true },
+      { text: "500 included voice minutes", highlight: false },
+      { text: "24/7 availability", highlight: false },
+      { text: "Live handoff to your team", highlight: false },
       { text: "1 CRM integration", highlight: false },
       { text: "Calendar & appointment booking", highlight: false },
       { text: "FAQ & knowledge base (150 entries)", highlight: false },
@@ -49,14 +49,14 @@ const pricingTiers = [
     featured: false,
     overage: "$0.18/min",
     features: [
-      { text: "1 custom AI voice agent", highlight: true },
-      { text: "1,000 included minutes", highlight: true },
-      { text: "Up to 3 phone numbers", highlight: false },
-      { text: "24/7 with intelligent call routing", highlight: false },
-      { text: "Live transfer with routing rules", highlight: false },
+      { text: "1 custom AI agent", highlight: true },
+      { text: "All channels — chat, email, web & voice", highlight: true },
+      { text: "1,000 included voice minutes", highlight: false },
+      { text: "24/7 with intelligent routing", highlight: false },
+      { text: "Live handoff with routing rules", highlight: false },
       { text: "1 CRM integration", highlight: false },
       { text: "Multi-calendar booking", highlight: false },
-      { text: "Custom conditional call flows", highlight: false },
+      { text: "Custom conditional workflows", highlight: false },
       { text: "FAQ & knowledge base (300 entries)", highlight: false },
       { text: "Monthly optimization call", highlight: false },
       { text: "Performance report & recs", highlight: false },
@@ -72,9 +72,9 @@ const discountTiers = [
 ];
 
 const roiStats = [
-  { number: "80%", description: "of callers hang up rather than leave a voicemail" },
-  { number: "24/7", description: "coverage vs. business hours with a human receptionist" },
-  { number: "~$3,500/mo", description: "average cost of after-hours coverage with live answering" },
+  { number: "24/7", description: "always on — nights, weekends, and overflow covered" },
+  { number: "Day 1", description: "productive from day one — no hiring, no ramp, no training" },
+  { number: "Fixed", description: "a predictable monthly cost vs. the price of a full-time hire" },
 ];
 
 const includedBoxes = [
@@ -82,14 +82,14 @@ const includedBoxes = [
     icon: Target,
     title: "What's Included in Setup",
     description:
-      "Discovery call to understand your business, custom call flow design, AI voice selection and tuning, knowledge base built from your FAQs, phone number provisioning, CRM and calendar integration, thorough testing, and live launch support.",
+      "Discovery call to understand your business and pick the right agent, custom workflow and conversation design, knowledge base built from your docs and FAQs, connections to your tools (CRM, calendar, phone, and more), thorough testing, and live launch support.",
     gradient: "from-violet to-purple",
   },
   {
     icon: RefreshCw,
     title: "Ongoing Management",
     description:
-      "24/7 monitoring to ensure uptime, knowledge base updates as your business evolves, call flow optimization based on real data, analytics and reporting, technical support, and platform maintenance — all included in your monthly plan.",
+      "24/7 monitoring to ensure uptime, knowledge base updates as your business evolves, agent tuning and optimization based on real data, analytics and reporting, technical support, and platform maintenance — all included in your monthly plan.",
     gradient: "from-cyan to-blue-500",
   },
 ];
@@ -132,21 +132,21 @@ export default function Pricing() {
           className="mb-16 text-center"
         >
           <span className="mb-4 inline-block text-sm font-medium uppercase tracking-widest text-violet-400">
-            AI Voice Agent Service
+            AI Agent Service
           </span>
           <h2
             className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl"
             style={{ fontFamily: "var(--font-space-grotesk)" }}
           >
-            Never miss a call again.{" "}
+            A specialist agent for the role you need.{" "}
             <br className="hidden sm:inline" />
-            <span className="gradient-text">Your AI receptionist, 24/7.</span>
+            <span className="gradient-text">Built, managed, working 24/7.</span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-white/50">
-            We design, build, and manage a custom AI voice agent that answers
-            your phone around the clock — handling FAQs, booking appointments,
-            routing calls, and capturing leads so you never lose another
-            customer.
+            We design, build, and manage a custom AI agent for your business —
+            handling support, scheduling, follow-ups, back-office tasks, and more
+            across chat, email, web, and phone, so your team can focus on what
+            actually moves the needle.
           </p>
         </motion.div>
 
@@ -171,7 +171,7 @@ export default function Pricing() {
                   One-Time Setup &amp; Configuration
                 </h3>
                 <p className="mt-1 text-sm text-white/40">
-                  Discovery call · Call flow design · Voice selection · Knowledge
+                  Discovery call · Agent design · Workflow mapping · Knowledge
                   base training · Integration setup · Go-live support
                 </p>
               </div>
@@ -270,7 +270,7 @@ export default function Pricing() {
 
               {/* Overage tag */}
               <span className="inline-block rounded-lg border border-cyan/25 bg-cyan/[0.08] px-3 py-1 text-xs font-semibold text-cyan-300">
-                Overage: {tier.overage}
+                Voice overage: {tier.overage}
               </span>
 
               {/* Hover glow */}
@@ -412,7 +412,7 @@ export default function Pricing() {
           </p>
           <div className="flex items-center gap-4">
             <p className="text-sm font-semibold text-white/60">
-              Ready to stop missing calls?
+              Ready to put an agent to work?
             </p>
             <a
               href="/#contact"
