@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { hashToken } from "@/lib/esign/tokens";
 import { applySignatureToDocument, computeContractStatus } from "@/lib/esign/sign";
 import { emailConfigured, sendSignedCopiesEmail } from "@/lib/esign/email";
+import { createSetupFeeLinks } from "@/lib/billing/setup-fee";
 import type { PublicSigningView } from "@/lib/esign/types";
 
 function clientMeta(request: NextRequest) {
@@ -207,7 +208,7 @@ export async function POST(
 
     const { data: account } = await admin
       .from("accounts")
-      .select("contact_id")
+      .select("contact_id, name, setup_fee_paid_at")
       .eq("id", sigRequest.account_id)
       .single();
     if (account) {
@@ -222,11 +223,25 @@ export async function POST(
       });
     }
 
-    // 5. Email copies to both parties (background)
+    // 5. Email copies to both parties (background). A fully executed contract
+    // whose setup fee is unpaid also carries the implementation-fee links.
     if (emailConfigured()) {
       const contractTitle = sigRequest.contract.title;
+      const wantsPayment = fullyExecuted && account && !account.setup_fee_paid_at;
       after(async () => {
         try {
+          let payment;
+          if (wantsPayment) {
+            try {
+              payment = await createSetupFeeLinks({
+                accountId: sigRequest.account_id,
+                contractId: sigRequest.contract_id,
+                accountName: account.name,
+              });
+            } catch (err) {
+              console.error("Setup-fee link creation failed (email sent without):", err);
+            }
+          }
           await sendSignedCopiesEmail({
             signerName: body.typed_name,
             signerEmail: sigRequest.signer_email,
@@ -235,6 +250,7 @@ export async function POST(
             signedFileHash: signedHash,
             pdfBase64: Buffer.from(signedBytes).toString("base64"),
             fileName: signedFileName,
+            payment,
           });
           const bg = createAdminClient();
           await bg.from("contract_audit_events").insert({

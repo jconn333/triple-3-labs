@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { applySignatureToDocument, computeContractStatus } from "@/lib/esign/sign";
 import { emailConfigured, sendSignedCopiesEmail } from "@/lib/esign/email";
+import { createSetupFeeLinks } from "@/lib/billing/setup-fee";
 import { PROVIDER_ORG } from "@/lib/esign/types";
 
 const counterSignSchema = z.object({
@@ -164,7 +165,7 @@ export async function POST(
 
     const { data: account } = await supabase
       .from("accounts")
-      .select("contact_id")
+      .select("contact_id, name, setup_fee_paid_at")
       .eq("id", accountId)
       .single();
     if (account) {
@@ -192,8 +193,22 @@ export async function POST(
       if (clientSig) {
         const signedBytes = result.signedBytes;
         const contractTitle = contract.title;
+        const wantsPayment = Boolean(account && !account.setup_fee_paid_at);
+        const accountName = account?.name ?? "";
         after(async () => {
           try {
+            let payment;
+            if (wantsPayment) {
+              try {
+                payment = await createSetupFeeLinks({
+                  accountId,
+                  contractId,
+                  accountName,
+                });
+              } catch (err) {
+                console.error("Setup-fee link creation failed (email sent without):", err);
+              }
+            }
             await sendSignedCopiesEmail({
               signerName: clientSig.signer_name,
               signerEmail: clientSig.signer_email,
@@ -202,6 +217,7 @@ export async function POST(
               signedFileHash: result.signedHash,
               pdfBase64: Buffer.from(signedBytes).toString("base64"),
               fileName: result.signedFileName,
+              payment,
             });
             const bg = createAdminClient();
             await bg.from("contract_audit_events").insert({

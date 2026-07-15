@@ -72,10 +72,32 @@ export async function sendSignedCopiesEmail(params: {
   signedFileHash: string;
   pdfBase64: string;
   fileName: string;
+  /** When set, the email includes "complete your setup payment" buttons. */
+  payment?: { achUrl: string; cardUrl: string };
 }): Promise<void> {
   const { from } = resendConfig();
   const internalCopy = process.env.NOTIFICATION_EMAIL;
   const to = [params.signerEmail, ...(internalCopy ? [internalCopy] : [])];
+
+  const paymentSection = params.payment
+    ? `
+        <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
+        <h3 style="margin-bottom:6px;">Next step: implementation fee</h3>
+        <p style="color:#555; margin-top:0;">Per Section 3.1 of the agreement, the one-time $1,500 implementation fee is due to get started. Pay by bank transfer, or by card (a 3% processing fee applies to card payments per Section 3.4):</p>
+        <p style="margin:20px 0;">
+          <a href="${params.payment.achUrl}"
+             style="background:#6b46c1; color:#fff; padding:12px 22px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-block; margin-right:10px;">
+            Pay $1,500 — Bank (ACH)
+          </a>
+          <a href="${params.payment.cardUrl}"
+             style="background:#f4f4f5; color:#1a1a2e; border:1px solid #d4d4d8; padding:12px 22px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-block;">
+            Pay $1,545 — Card
+          </a>
+        </p>
+        <p style="color:#888; font-size:12px;">Your payment method will be securely saved with our payment processor (Stripe) for the monthly service fee, which begins when your SEO agent goes live.</p>
+      `
+    : "";
+
   await sendViaResend({
     from,
     to,
@@ -88,6 +110,7 @@ export async function sendSignedCopiesEmail(params: {
           params.signedAtIso
         )} (UTC).</p>
         <p>A copy of the fully signed document is attached for your records, including the signature certificate.</p>
+        ${paymentSection}
         <p style="color:#888; font-size:11px; word-break:break-all;">Document SHA-256: ${esc(
           params.signedFileHash
         )}</p>

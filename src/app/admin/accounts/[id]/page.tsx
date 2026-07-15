@@ -317,7 +317,19 @@ export default function AccountDetailPage() {
 
           {/* Subscriptions */}
           <div className="glass-card rounded-xl p-6">
-            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-white/40">Subscriptions</h3>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40">Subscriptions</h3>
+              <span
+                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                  account.setup_fee_paid_at
+                    ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                    : "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                }`}
+                title={account.setup_fee_paid_at ? `Paid ${formatDate(account.setup_fee_paid_at)}` : "Awaiting implementation-fee payment"}
+              >
+                {account.setup_fee_paid_at ? "Setup fee paid" : "Setup fee unpaid"}
+              </span>
+            </div>
             {subsLoading ? (
               <div className="space-y-3">
                 <div className="h-16 animate-pulse rounded-lg bg-white/5" />
