@@ -12,6 +12,8 @@ const EVENTS = [
   "checkout.session.completed",
   "checkout.session.async_payment_succeeded",
   "checkout.session.async_payment_failed",
+  "invoice.paid",
+  "invoice.payment_failed",
 ];
 
 const key = process.env.STRIPE_SECRET_KEY;

@@ -72,6 +72,14 @@ export async function POST(request: NextRequest) {
         });
         break;
       }
+      case "invoice.paid": {
+        await logInvoiceActivity(event.data.object as Stripe.Invoice, "paid");
+        break;
+      }
+      case "invoice.payment_failed": {
+        await logInvoiceActivity(event.data.object as Stripe.Invoice, "failed");
+        break;
+      }
       default:
         break;
     }
@@ -148,6 +156,40 @@ async function markSetupFeePaid(session: Stripe.Checkout.Session): Promise<void>
   await deactivateAllSetupFeeLinks(accountId).catch((e) =>
     console.error("Link deactivation failed:", e)
   );
+}
+
+/** Subscription invoices → account timeline (matched by Stripe customer id). */
+async function logInvoiceActivity(invoice: Stripe.Invoice, outcome: "paid" | "failed"): Promise<void> {
+  const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
+  if (!customerId) return;
+
+  const admin = createAdminClient();
+  const { data: account } = await admin
+    .from("accounts")
+    .select("id, contact_id")
+    .eq("stripe_customer_id", customerId)
+    .single();
+  if (!account) return; // not one of ours (e.g. unrelated Stripe activity)
+
+  const amount = ((outcome === "paid" ? invoice.amount_paid : invoice.amount_due) / 100).toLocaleString(
+    "en-US",
+    { style: "currency", currency: "usd" }
+  );
+  const cycle = invoice.billing_reason === "subscription_create" ? "first" : "monthly";
+  await admin.from("activities").insert({
+    account_id: account.id,
+    contact_id: account.contact_id,
+    type: outcome === "paid" ? "payment_received" : "payment_failed",
+    title:
+      outcome === "paid"
+        ? `Subscription payment received: ${amount} (${cycle} invoice)`
+        : `Subscription payment FAILED: ${amount} — follow up with the client`,
+    description:
+      outcome === "paid"
+        ? `Invoice ${invoice.number ?? invoice.id} paid.`
+        : `Invoice ${invoice.number ?? invoice.id} did not collect. Stripe will retry per its dunning settings.`,
+    metadata: { invoice_id: invoice.id, billing_reason: invoice.billing_reason },
+  });
 }
 
 async function logActivity(

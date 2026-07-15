@@ -14,6 +14,7 @@ import AccountStatusBadge from "@/components/admin/AccountStatusBadge";
 import ContractUploadModal from "@/components/admin/ContractUploadModal";
 import SendSignatureModal from "@/components/admin/SendSignatureModal";
 import CounterSignModal from "@/components/admin/CounterSignModal";
+import StartSubscriptionModal from "@/components/admin/StartSubscriptionModal";
 import type { Account, Contract, Activity, SubscriptionSummary, InvoiceSummary } from "@/lib/crm/types";
 
 export default function AccountDetailPage() {
@@ -28,6 +29,7 @@ export default function AccountDetailPage() {
   const [showUpload, setShowUpload] = useState(false);
   const [sigContract, setSigContract] = useState<Contract | null>(null);
   const [counterSignContract, setCounterSignContract] = useState<Contract | null>(null);
+  const [showStartSub, setShowStartSub] = useState(false);
   const [notes, setNotes] = useState("");
   const notesTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -52,22 +54,23 @@ export default function AccountDetailPage() {
   }, [fetchAccount]);
 
   // Lazy-load Stripe data
-  useEffect(() => {
-    async function fetchStripe() {
-      try {
-        const res = await fetch(`/api/accounts/${id}/subscriptions`);
-        if (!res.ok) throw new Error("Failed");
-        const data = await res.json();
-        setSubscriptions(data.subscriptions || []);
-        setInvoices(data.invoices || []);
-      } catch {
-        // Silently fail — Stripe data is optional
-      } finally {
-        setSubsLoading(false);
-      }
+  const fetchStripeData = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/accounts/${id}/subscriptions`);
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      setSubscriptions(data.subscriptions || []);
+      setInvoices(data.invoices || []);
+    } catch {
+      // Silently fail — Stripe data is optional
+    } finally {
+      setSubsLoading(false);
     }
-    fetchStripe();
   }, [id]);
+
+  useEffect(() => {
+    fetchStripeData();
+  }, [fetchStripeData]);
 
   // Auto-save notes with debounce
   function handleNotesChange(value: string) {
@@ -319,16 +322,29 @@ export default function AccountDetailPage() {
           <div className="glass-card rounded-xl p-6">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40">Subscriptions</h3>
-              <span
-                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-                  account.setup_fee_paid_at
-                    ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-                    : "text-amber-400 bg-amber-500/10 border-amber-500/20"
-                }`}
-                title={account.setup_fee_paid_at ? `Paid ${formatDate(account.setup_fee_paid_at)}` : "Awaiting implementation-fee payment"}
-              >
-                {account.setup_fee_paid_at ? "Setup fee paid" : "Setup fee unpaid"}
-              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                    account.setup_fee_paid_at
+                      ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                      : "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                  }`}
+                  title={account.setup_fee_paid_at ? `Paid ${formatDate(account.setup_fee_paid_at)}` : "Awaiting implementation-fee payment"}
+                >
+                  {account.setup_fee_paid_at ? "Setup fee paid" : "Setup fee unpaid"}
+                </span>
+                {account.setup_fee_paid_at &&
+                  account.stripe_customer_id &&
+                  !subsLoading &&
+                  !subscriptions.some((s) => !["canceled", "incomplete_expired"].includes(s.status)) && (
+                    <button
+                      onClick={() => setShowStartSub(true)}
+                      className="text-xs text-violet hover:text-violet/80"
+                    >
+                      + Start subscription
+                    </button>
+                  )}
+              </div>
             </div>
             {subsLoading ? (
               <div className="space-y-3">
@@ -455,6 +471,20 @@ export default function AccountDetailPage() {
           contract={counterSignContract}
           onClose={() => setCounterSignContract(null)}
           onSigned={fetchAccount}
+        />
+      )}
+
+      {/* Start Subscription Modal */}
+      {showStartSub && (
+        <StartSubscriptionModal
+          accountId={id}
+          accountName={account.name}
+          onClose={() => setShowStartSub(false)}
+          onStarted={() => {
+            setSubsLoading(true);
+            fetchStripeData();
+            fetchAccount();
+          }}
         />
       )}
 
