@@ -24,6 +24,7 @@ export default function SigningClient({ token }: { token: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [justSigned, setJustSigned] = useState(false);
+  const [payment, setPayment] = useState<{ achUrl: string; cardUrl: string } | null>(null);
 
   const [consent, setConsent] = useState(false);
   const [typedName, setTypedName] = useState("");
@@ -114,6 +115,7 @@ export default function SigningClient({ token }: { token: string }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Signing failed");
+      if (data.payment?.achUrl && data.payment?.cardUrl) setPayment(data.payment);
       setJustSigned(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signing failed. Please try again.");
@@ -146,13 +148,45 @@ export default function SigningClient({ token }: { token: string }) {
 
   if (justSigned) {
     return shell(
-      <div className="glass-card rounded-2xl p-10 text-center">
-        <CheckCircle2 className="mx-auto mb-4 text-emerald-400" size={48} />
-        <h1 className="mb-2 text-2xl font-semibold">Document signed</h1>
-        <p className="text-white/60">
-          Thank you, {typedName.trim()}. A copy of the fully signed document is being emailed to{" "}
-          <span className="text-white/90">{view?.signer_email}</span> for your records.
-        </p>
+      <div className="space-y-6">
+        <div className="glass-card rounded-2xl p-10 text-center">
+          <CheckCircle2 className="mx-auto mb-4 text-emerald-400" size={48} />
+          <h1 className="mb-2 text-2xl font-semibold">Document signed</h1>
+          <p className="text-white/60">
+            Thank you, {typedName.trim()}. A copy of the fully signed document is being emailed to{" "}
+            <span className="text-white/90">{view?.signer_email}</span> for your records.
+          </p>
+        </div>
+
+        {payment && (
+          <div className="glass-card rounded-2xl p-8">
+            <h2 className="mb-1 text-lg font-semibold">Next step: implementation fee</h2>
+            <p className="mb-6 text-sm text-white/50">
+              Per Section 3.1 of the agreement, the one-time $1,500 implementation fee is due to
+              get started. Pay by bank transfer, or by card (a 3% processing fee applies to card
+              payments per Section 3.4).
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <a
+                href={payment.achUrl}
+                className="flex-1 rounded-lg bg-violet-600 px-6 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-violet-500"
+              >
+                Pay $1,500 — Bank (ACH)
+              </a>
+              <a
+                href={payment.cardUrl}
+                className="flex-1 rounded-lg border border-white/15 bg-white/5 px-6 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Pay $1,545 — Card
+              </a>
+            </div>
+            <p className="mt-4 text-center text-[11px] text-white/30">
+              Payments are processed securely by Stripe. Your payment method is saved for the
+              monthly service fee, which begins when your SEO agent goes live. These links are
+              also in your email.
+            </p>
+          </div>
+        )}
       </div>
     );
   }

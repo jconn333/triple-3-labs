@@ -224,25 +224,27 @@ export async function POST(
       });
     }
 
-    // 5. Email copies to both parties (background). A fully executed contract
-    // whose setup fee is unpaid also carries the implementation-fee links.
+    // 5. A fully executed contract with an unpaid setup fee gets payment links —
+    // created before we respond, so the confirmation screen can show them too.
+    const wantsPayment = fullyExecuted && account && !account.setup_fee_paid_at;
+    let payment: { achUrl: string; cardUrl: string } | undefined;
+    if (wantsPayment) {
+      try {
+        payment = await createSetupFeeLinks({
+          accountId: sigRequest.account_id,
+          contractId: sigRequest.contract_id,
+          accountName: account.name,
+        });
+      } catch (err) {
+        console.error("Setup-fee link creation failed (continuing without):", err);
+      }
+    }
+
+    // 6. Email copies to both parties (background), reusing the same links.
     if (emailConfigured()) {
       const contractTitle = sigRequest.contract.title;
-      const wantsPayment = fullyExecuted && account && !account.setup_fee_paid_at;
       after(async () => {
         try {
-          let payment;
-          if (wantsPayment) {
-            try {
-              payment = await createSetupFeeLinks({
-                accountId: sigRequest.account_id,
-                contractId: sigRequest.contract_id,
-                accountName: account.name,
-              });
-            } catch (err) {
-              console.error("Setup-fee link creation failed (email sent without):", err);
-            }
-          }
           await sendSignedCopiesEmail({
             signerName: body.typed_name,
             signerEmail: sigRequest.signer_email,
@@ -266,10 +268,10 @@ export async function POST(
               contact_id: account.contact_id,
               type: "email_sent",
               title: `Executed contract emailed to ${sigRequest.signer_email}`,
-              description: wantsPayment
+              description: payment
                 ? "Signed copy attached, with implementation-fee payment links."
                 : "Signed copy attached.",
-              metadata: { contract_id: sigRequest.contract_id, payment_links_included: Boolean(wantsPayment) },
+              metadata: { contract_id: sigRequest.contract_id, payment_links_included: Boolean(payment) },
             });
           }
         } catch (err) {
@@ -278,7 +280,13 @@ export async function POST(
       });
     }
 
-    return NextResponse.json({ success: true, signed_at: signedAtIso });
+    return NextResponse.json({
+      success: true,
+      signed_at: signedAtIso,
+      fully_executed: fullyExecuted,
+      // Shown on the confirmation screen so the signer can pay immediately.
+      payment: payment ?? null,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid submission", details: error.issues }, { status: 400 });
