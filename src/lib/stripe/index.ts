@@ -28,15 +28,38 @@ export async function createStripeCustomer(params: {
 export async function getCustomerSubscriptions(
   stripeCustomerId: string
 ): Promise<SubscriptionSummary[]> {
-  const { data } = await getStripe().subscriptions.list({
+  const stripe = getStripe();
+  const { data } = await stripe.subscriptions.list({
     customer: stripeCustomerId,
     status: "all",
-    expand: ["data.default_payment_method", "data.items.data.price.product"],
+    // NOTE: "data.items.data.price.product" is 5 levels — Stripe caps expansion
+    // at 4 and rejects the whole call. Product names are resolved separately.
+    expand: ["data.default_payment_method", "data.items.data.price"],
     limit: 100,
   });
 
+  // Resolve product names for the (few) unique product ids.
+  const productIds = [
+    ...new Set(
+      data
+        .flatMap((sub) => sub.items.data.map((item) => item.price?.product))
+        .filter((p): p is string => typeof p === "string")
+    ),
+  ];
+  const productNames = new Map<string, string>();
+  await Promise.all(
+    productIds.map(async (pid) => {
+      try {
+        const product = await stripe.products.retrieve(pid);
+        productNames.set(pid, product.name);
+      } catch {
+        // leave unnamed
+      }
+    })
+  );
+
   return data.map((sub) => {
-    // In newer Stripe SDK, current_period is on items, not the subscription itself
+    // In newer Stripe API versions, current_period lives on items
     const firstItem = sub.items.data[0];
     const periodStart = firstItem?.current_period_start;
     const periodEnd = firstItem?.current_period_end;
@@ -50,9 +73,9 @@ export async function getCustomerSubscriptions(
     items: sub.items.data.map((item) => {
       const product = item.price?.product;
       const productName =
-        typeof product === "object" && product && "name" in product
-          ? (product as Stripe.Product).name
-          : "Unknown";
+        typeof product === "string"
+          ? productNames.get(product) || item.price?.nickname || "Subscription"
+          : (product as Stripe.Product | null)?.name || "Subscription";
       return {
         product_name: productName,
         price_amount: (item.price?.unit_amount || 0) / 100,
@@ -63,12 +86,21 @@ export async function getCustomerSubscriptions(
     }),
     default_payment_method: (() => {
       const pm = sub.default_payment_method;
-      if (typeof pm === "object" && pm && "card" in pm && pm.card) {
+      if (typeof pm !== "object" || !pm) return null;
+      if ("card" in pm && pm.card) {
         return {
           brand: pm.card.brand || "unknown",
           last4: pm.card.last4 || "****",
           exp_month: pm.card.exp_month,
           exp_year: pm.card.exp_year,
+        };
+      }
+      if ("us_bank_account" in pm && pm.us_bank_account) {
+        return {
+          brand: "bank",
+          last4: pm.us_bank_account.last4 || "****",
+          exp_month: 0,
+          exp_year: 0,
         };
       }
       return null;
