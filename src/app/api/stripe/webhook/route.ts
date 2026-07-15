@@ -117,6 +117,7 @@ async function markSetupFeePaid(session: Stripe.Checkout.Session): Promise<void>
     currency: "usd",
   });
   await admin.from("activities").insert({
+    account_id: accountId,
     contact_id: account.contact_id,
     type: "payment_received",
     title: `Implementation fee paid: ${amount} (${method})`,
@@ -148,6 +149,7 @@ async function logActivity(
     .single();
   if (!account) return;
   await admin.from("activities").insert({
+    account_id: accountId,
     contact_id: account.contact_id,
     type: entry.type,
     title: entry.title,

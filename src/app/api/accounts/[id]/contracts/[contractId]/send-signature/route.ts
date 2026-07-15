@@ -147,11 +147,12 @@ export async function POST(
       .single();
     if (account) {
       await admin.from("activities").insert({
+        account_id: accountId,
         contact_id: account.contact_id,
         type: "contract_sent",
         title: `Contract sent for signature: ${contract.title}`,
-        description: `Sent to ${body.signer_name} <${body.signer_email}>${emailSent ? "" : " (email not sent — share the signing link manually)"}`,
-        metadata: { signature_request_id: sigRequest.id },
+        description: `Signing link ${emailSent ? "emailed to" : "created for"} ${body.signer_name} <${body.signer_email}>${emailSent ? "" : " (email not sent — share the signing link manually)"}`,
+        metadata: { signature_request_id: sigRequest.id, email_sent: emailSent },
       });
     }
 

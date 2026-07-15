@@ -213,6 +213,7 @@ export async function POST(
       .single();
     if (account) {
       await admin.from("activities").insert({
+        account_id: sigRequest.account_id,
         contact_id: account.contact_id,
         type: "contract_signed",
         title: fullyExecuted
@@ -259,6 +260,18 @@ export async function POST(
             event_type: "copies_emailed",
             metadata: { to: [sigRequest.signer_email, process.env.NOTIFICATION_EMAIL].filter(Boolean) },
           });
+          if (account) {
+            await bg.from("activities").insert({
+              account_id: sigRequest.account_id,
+              contact_id: account.contact_id,
+              type: "email_sent",
+              title: `Executed contract emailed to ${sigRequest.signer_email}`,
+              description: wantsPayment
+                ? "Signed copy attached, with implementation-fee payment links."
+                : "Signed copy attached.",
+              metadata: { contract_id: sigRequest.contract_id, payment_links_included: Boolean(wantsPayment) },
+            });
+          }
         } catch (err) {
           console.error("Signed-copies email failed:", err);
         }

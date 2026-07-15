@@ -170,6 +170,7 @@ export async function POST(
       .single();
     if (account) {
       await admin.from("activities").insert({
+        account_id: accountId,
         contact_id: account.contact_id,
         type: fullyExecuted ? "contract_signed" : "contract_counter_signed",
         title: fullyExecuted
@@ -226,6 +227,18 @@ export async function POST(
               event_type: "copies_emailed",
               metadata: { to: clientSig.signer_email, reason: "fully_executed_after_counter_sign" },
             });
+            if (account) {
+              await bg.from("activities").insert({
+                account_id: accountId,
+                contact_id: account.contact_id,
+                type: "email_sent",
+                title: `Executed contract emailed to ${clientSig.signer_email}`,
+                description: wantsPayment
+                  ? "Signed copy attached, with implementation-fee payment links."
+                  : "Signed copy attached.",
+                metadata: { contract_id: contractId, payment_links_included: wantsPayment },
+              });
+            }
           } catch (err) {
             console.error("Executed-copy email failed:", err);
           }
