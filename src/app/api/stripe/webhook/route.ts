@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { deactivateLinkAndSibling } from "@/lib/billing/setup-fee";
+import { deactivateAllSetupFeeLinks } from "@/lib/billing/setup-fee";
 
 /**
  * Stripe webhook. Currently handles implementation-fee payments made through
@@ -99,7 +99,21 @@ async function markSetupFeePaid(session: Stripe.Checkout.Session): Promise<void>
     .select("id, contact_id, setup_fee_paid_at, stripe_customer_id")
     .eq("id", accountId)
     .single();
-  if (!account || account.setup_fee_paid_at) return; // unknown or already recorded
+  if (!account) return;
+  if (account.setup_fee_paid_at) {
+    // Already recorded (e.g. a stale link got paid twice) — still make sure no
+    // link stays active, and leave a loud trace for follow-up/refund.
+    await deactivateAllSetupFeeLinks(accountId).catch(() => {});
+    await admin.from("activities").insert({
+      account_id: accountId,
+      contact_id: account.contact_id,
+      type: "payment_received",
+      title: "DUPLICATE implementation-fee payment received — review for refund",
+      description: `A second setup-fee payment came in after the fee was already marked paid. Checkout session ${session.id}.`,
+      metadata: { checkout_session: session.id },
+    });
+    return;
+  }
 
   await admin
     .from("accounts")
@@ -130,9 +144,10 @@ async function markSetupFeePaid(session: Stripe.Checkout.Session): Promise<void>
     },
   });
 
-  // Retire both payment links so the pair can't be paid twice.
-  const linkId = typeof session.payment_link === "string" ? session.payment_link : session.payment_link?.id;
-  if (linkId) await deactivateLinkAndSibling(linkId).catch((e) => console.error("Link deactivation failed:", e));
+  // Retire every outstanding setup-fee link for this account (not just this pair).
+  await deactivateAllSetupFeeLinks(accountId).catch((e) =>
+    console.error("Link deactivation failed:", e)
+  );
 }
 
 async function logActivity(

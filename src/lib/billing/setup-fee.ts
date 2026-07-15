@@ -123,13 +123,29 @@ export async function createSetupFeeLinks(params: {
   return { achUrl: ach.url, cardUrl: card.url };
 }
 
-/** Deactivate a payment link (and its sibling) once one of them has been paid. */
-export async function deactivateLinkAndSibling(paymentLinkId: string): Promise<void> {
+/**
+ * Once the fee is paid, retire EVERY active setup-fee link for the account —
+ * not just the paid pair. Multiple executions (or resends) can mint multiple
+ * pairs, and any stale active link could otherwise take a second payment.
+ */
+export async function deactivateAllSetupFeeLinks(accountId: string): Promise<void> {
   const stripe = getStripe();
-  const link = await stripe.paymentLinks.retrieve(paymentLinkId);
-  await stripe.paymentLinks.update(paymentLinkId, { active: false });
-  const sibling = link.metadata?.sibling_link_id;
-  if (sibling) {
-    await stripe.paymentLinks.update(sibling, { active: false }).catch(() => {});
+  let startingAfter: string | undefined;
+  for (let page = 0; page < 10; page++) {
+    const batch = await stripe.paymentLinks.list({
+      active: true,
+      limit: 100,
+      ...(startingAfter ? { starting_after: startingAfter } : {}),
+    });
+    for (const link of batch.data) {
+      if (
+        link.metadata?.purpose === "implementation_fee" &&
+        link.metadata?.account_id === accountId
+      ) {
+        await stripe.paymentLinks.update(link.id, { active: false }).catch(() => {});
+      }
+    }
+    if (!batch.has_more) break;
+    startingAfter = batch.data[batch.data.length - 1]?.id;
   }
 }
