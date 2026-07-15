@@ -52,7 +52,13 @@ export interface Activity {
 }
 
 export type AccountStatus = "active" | "paused" | "churned";
-export type ContractStatus = "draft" | "sent" | "signed" | "expired" | "cancelled";
+export type ContractStatus =
+  | "draft"
+  | "sent"
+  | "partially_signed"
+  | "signed"
+  | "expired"
+  | "cancelled";
 
 export interface Account {
   id: string;
@@ -65,6 +71,14 @@ export interface Account {
   updated_at: string;
   contact?: Contact;
   contracts?: Contract[];
+}
+
+/** Slim signature view joined onto a contract for the admin UI. */
+export interface ContractSignature {
+  signer_role: "provider" | "client";
+  status: string;
+  signer_name: string;
+  signed_at: string | null;
 }
 
 export interface Contract {
@@ -84,6 +98,8 @@ export interface Contract {
   esign_signed_at: string | null;
   created_at: string;
   updated_at: string;
+  /** Joined from signature_requests — who has signed so far. */
+  signatures?: ContractSignature[];
 }
 
 export interface SubscriptionSummary {

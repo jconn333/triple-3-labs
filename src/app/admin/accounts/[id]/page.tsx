@@ -7,11 +7,13 @@ import { toast } from "sonner";
 import {
   Mail, Building2, Upload, ExternalLink, FileText,
   Download, Trash2, Clock, CreditCard, ArrowRight,
-  Sparkles, Receipt,
+  Sparkles, Receipt, PenLine, Stamp,
 } from "lucide-react";
 import { formatDate, formatRelativeTime, formatCurrency } from "@/lib/utils/format";
 import AccountStatusBadge from "@/components/admin/AccountStatusBadge";
 import ContractUploadModal from "@/components/admin/ContractUploadModal";
+import SendSignatureModal from "@/components/admin/SendSignatureModal";
+import CounterSignModal from "@/components/admin/CounterSignModal";
 import type { Account, Contract, Activity, SubscriptionSummary, InvoiceSummary } from "@/lib/crm/types";
 
 export default function AccountDetailPage() {
@@ -24,6 +26,8 @@ export default function AccountDetailPage() {
   const [loading, setLoading] = useState(true);
   const [subsLoading, setSubsLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
+  const [sigContract, setSigContract] = useState<Contract | null>(null);
+  const [counterSignContract, setCounterSignContract] = useState<Contract | null>(null);
   const [notes, setNotes] = useState("");
   const notesTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -139,10 +143,14 @@ export default function AccountDetailPage() {
   const contractStatusColors: Record<string, string> = {
     draft: "text-zinc-400 bg-zinc-500/10 border-zinc-500/20",
     sent: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+    partially_signed: "text-violet-300 bg-violet-500/10 border-violet-500/25",
     signed: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
     expired: "text-amber-400 bg-amber-500/10 border-amber-500/20",
     cancelled: "text-rose-400 bg-rose-500/10 border-rose-500/20",
   };
+
+  const signedRoles = (c: Contract) =>
+    new Set((c.signatures || []).filter((s) => s.status === "signed").map((s) => s.signer_role));
 
   const activityIcons: Record<string, typeof Clock> = {
     account_created: Building2,
@@ -265,12 +273,35 @@ export default function AccountDetailPage() {
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-white truncate">{c.title}</p>
                         <p className="text-xs text-white/40">{c.file_name} &middot; {formatDate(c.created_at)}</p>
+                        {(c.signatures?.some((s) => s.status === "signed")) && (
+                          <p className="mt-0.5 text-[10px] text-white/40">
+                            Signed by{" "}
+                            {signedRoles(c).has("provider") ? "JMC" : ""}
+                            {signedRoles(c).size === 2 ? " + " : ""}
+                            {signedRoles(c).has("client") ? "client" : ""}
+                            {signedRoles(c).size < 2 && (
+                              <span className="text-amber-400/70">
+                                {" "}· awaiting {signedRoles(c).has("provider") ? "client" : "JMC"}
+                              </span>
+                            )}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
                       <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${contractStatusColors[c.status] || contractStatusColors.draft}`}>
-                        {c.status}
+                        {c.status.replace("_", " ")}
                       </span>
+                      {!signedRoles(c).has("provider") && (
+                        <button onClick={() => setCounterSignContract(c)} className="text-white/30 hover:text-emerald-400" title="Counter-sign as JMC">
+                          <Stamp size={14} />
+                        </button>
+                      )}
+                      {!signedRoles(c).has("client") && (
+                        <button onClick={() => setSigContract(c)} className="text-white/30 hover:text-violet" title="Send to client for signature">
+                          <PenLine size={14} />
+                        </button>
+                      )}
                       <button onClick={() => handleDownload(c.id)} className="text-white/30 hover:text-white/60" title="Download">
                         <Download size={14} />
                       </button>
@@ -402,6 +433,28 @@ export default function AccountDetailPage() {
           accountId={id}
           onClose={() => setShowUpload(false)}
           onUploaded={fetchAccount}
+        />
+      )}
+
+      {/* Counter-sign Modal */}
+      {counterSignContract && (
+        <CounterSignModal
+          accountId={id}
+          contract={counterSignContract}
+          onClose={() => setCounterSignContract(null)}
+          onSigned={fetchAccount}
+        />
+      )}
+
+      {/* Send for Signature Modal */}
+      {sigContract && (
+        <SendSignatureModal
+          accountId={id}
+          contract={sigContract}
+          defaultSignerName={contact ? `${contact.first_name} ${contact.last_name}`.trim() : ""}
+          defaultSignerEmail={contact?.email || ""}
+          onClose={() => setSigContract(null)}
+          onSent={fetchAccount}
         />
       )}
     </div>

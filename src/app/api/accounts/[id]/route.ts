@@ -18,7 +18,7 @@ export async function GET(
       .single(),
     supabase
       .from("contracts")
-      .select("*")
+      .select("*, signatures:signature_requests(signer_role, status, signer_name, signed_at)")
       .eq("account_id", id)
       .order("created_at", { ascending: false }),
     supabase
