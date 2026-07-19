@@ -11,6 +11,7 @@ import spendaroo from "./spendaroo";
 import otto from "./otto";
 import seoAgent from "./seo-agent";
 import pilotBilling from "./pilot-billing";
+import takeoffEstimator from "./takeoff-estimator";
 
 export type { CaseStudy, CaseStudyResult, CaseStudySolution } from "./types";
 
@@ -28,6 +29,7 @@ export const caseStudies: CaseStudy[] = [
   otto,
   seoAgent,
   pilotBilling,
+  takeoffEstimator,
 ];
 
 export function getBySlug(slug: string): CaseStudy | undefined {

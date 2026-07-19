@@ -20,6 +20,7 @@ import {
   UserPlus,
   Video,
   MousePointerClick,
+  Ruler,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -263,6 +264,25 @@ const agents: Agent[] = [
     gradient: "from-fuchsia-500 to-pink-500",
     accentColor: "fuchsia",
     status: "available",
+  },
+  {
+    name: "The Takeoff Estimator",
+    title: "Construction Drawing Takeoffs & Estimating",
+    description:
+      "Reads structural construction drawings and proposes takeoff elements — bar callouts, spacing, accessories — with every measurement linked back to its source sheet for an estimator to approve, edit, or flag. Currently in active development, being validated against real historical estimates before it touches a live bid.",
+    skills: [
+      "Plan sheet classification",
+      "AI-proposed measurements & counts",
+      "Evidence-linked review",
+      "Deterministic quantity calculations",
+      "Approve / edit / flag workflow",
+      "Full audit trail",
+    ],
+    tools: ["PDF Plan Sets", "Apryse", "Nutrient", "Supabase"],
+    icon: Ruler,
+    gradient: "from-slate-400 to-zinc-600",
+    accentColor: "slate",
+    status: "coming-soon",
   },
 ];
 

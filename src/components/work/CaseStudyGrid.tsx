@@ -48,6 +48,11 @@ export default function CaseStudyGrid({
                     {caseStudy.industry}
                   </span>
                   <span className="text-white/40">{caseStudy.client}</span>
+                  {caseStudy.inDevelopment && (
+                    <span className="rounded-full bg-amber-500/10 px-3 py-1 font-medium text-amber-400">
+                      In Development
+                    </span>
+                  )}
                 </div>
 
                 <h2

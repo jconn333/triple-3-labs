@@ -74,7 +74,19 @@ export default async function CaseStudyPage({
               {caseStudy.industry}
             </span>
             <span className="text-white/40">{caseStudy.client}</span>
+            {caseStudy.inDevelopment && (
+              <span className="rounded-full bg-amber-500/10 px-3 py-1 font-medium text-amber-400">
+                In Development
+              </span>
+            )}
           </div>
+
+          {caseStudy.inDevelopment && (
+            <p className="mb-4 max-w-2xl text-sm leading-relaxed text-amber-300/70">
+              This one&apos;s still being built and validated — not yet a finished, shipped
+              system. We&apos;re showing the process, not claiming it&apos;s done.
+            </p>
+          )}
 
           <h1
             className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl"
@@ -200,15 +212,17 @@ export default async function CaseStudyPage({
       )}
 
       {/* Read full story */}
-      <section className="relative px-6 py-10 text-center">
-        <Link
-          href={`/blog/${caseStudy.blogSlug}`}
-          className="inline-flex items-center gap-1.5 text-base font-medium text-violet-400 transition-all hover:gap-2.5"
-        >
-          {caseStudy.blogLinkLabel ?? "Read the full build story"}
-          <ArrowRight size={16} />
-        </Link>
-      </section>
+      {caseStudy.blogSlug && (
+        <section className="relative px-6 py-10 text-center">
+          <Link
+            href={`/blog/${caseStudy.blogSlug}`}
+            className="inline-flex items-center gap-1.5 text-base font-medium text-violet-400 transition-all hover:gap-2.5"
+          >
+            {caseStudy.blogLinkLabel ?? "Read the full build story"}
+            <ArrowRight size={16} />
+          </Link>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="relative py-16 px-6">

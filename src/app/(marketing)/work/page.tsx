@@ -44,9 +44,10 @@ export default function WorkPage() {
             Real systems. <span className="gradient-text">Running in real businesses.</span>
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-white/50">
-            Every system below is live in production today — most of them in
-            our own companies first. We build for ourselves before we build
-            for you, so we know exactly what breaks and what doesn&apos;t.
+            Real systems, live in production or actively in development —
+            most of the finished ones built for our own companies first. We
+            build for ourselves before we build for you, so we know exactly
+            what breaks and what doesn&apos;t.
           </p>
 
           <div className="mx-auto mt-10 grid max-w-2xl grid-cols-2 gap-6 sm:grid-cols-4">

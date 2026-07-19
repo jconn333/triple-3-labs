@@ -23,12 +23,14 @@ export interface CaseStudy {
   stack: string[];
   results: CaseStudyResult[];
   pullQuote?: string;
-  /** Slug of the related post at /blog/<blogSlug>. */
-  blogSlug: string;
+  /** Slug of the related post at /blog/<blogSlug>, if one exists. */
+  blogSlug?: string;
   /** Override link text when blogSlug isn't a build narrative (defaults to "Read the full build story"). */
   blogLinkLabel?: string;
   /** Tailwind gradient stops, e.g. "from-violet to-purple". */
   gradient: string;
   /** Plain color name used for text/border accents, e.g. "violet". */
   accentColor: string;
+  /** True for systems still in active development/validation, not yet live in production. */
+  inDevelopment?: boolean;
 }
