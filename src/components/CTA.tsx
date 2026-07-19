@@ -20,19 +20,35 @@ export default function CTA() {
         className="relative z-10 mx-auto max-w-2xl"
       >
         <div className="text-center mb-8">
+          <span className="mb-4 inline-block text-sm font-medium uppercase tracking-widest text-violet-400">
+            Free AI Assessment
+          </span>
           <h2
             className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl"
             style={{ fontFamily: "var(--font-space-grotesk)" }}
           >
-            Ready to{" "}
-            <span className="gradient-text">Supercharge</span>
-            <br />
-            Your Business?
+            Let&apos;s grab a <span className="gradient-text">coffee.</span>
           </h2>
           <p className="mx-auto max-w-xl text-lg text-white/50">
-            Tell us about your project and we&apos;ll show you how AI agents and
-            automation can transform your operations.
+            Tell me about your business — where the hours go, what keeps
+            slipping through the cracks — and I&apos;ll show you where AI
+            could actually help. And if it can&apos;t, I&apos;ll tell you
+            that too.
           </p>
+          <div className="mx-auto mt-6 flex max-w-2xl flex-wrap items-center justify-center gap-3">
+            {[
+              "3 real opportunities, mapped",
+              "Plain English, no jargon",
+              "No pitch — keep the notes either way",
+            ].map((promise) => (
+              <span
+                key={promise}
+                className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 text-sm text-white/50"
+              >
+                {promise}
+              </span>
+            ))}
+          </div>
         </div>
 
         <div className="glass-card rounded-2xl p-8">
@@ -40,7 +56,8 @@ export default function CTA() {
         </div>
 
         <p className="mt-4 text-center text-sm text-white/30">
-          No commitment required. We&apos;ll get back to you within 24 hours.
+          Free assessment &middot; No commitment &middot; We&apos;ll get back
+          to you within 24 hours.
         </p>
       </motion.div>
     </section>

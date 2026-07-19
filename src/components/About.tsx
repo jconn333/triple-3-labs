@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, TreePine, Hotel, UtensilsCrossed, Inbox, CalendarDays, Star, Search, Share2 } from "lucide-react";
+import { ArrowRight, TreePine, Hotel, UtensilsCrossed, Inbox, CalendarDays, Star, Search, Share2, Phone, LineChart, Ticket } from "lucide-react";
 import Link from "next/link";
 
 const properties = [
@@ -32,11 +32,14 @@ const properties = [
 ];
 
 const builtAgents = [
+  { icon: Phone, label: "Voice agents", description: "Answer the hotel and theater phones 24/7 — quote rooms, text booking links" },
+  { icon: LineChart, label: "Dynamic pricing", description: "Reprices 75 cabins and treehouses nightly, with every price explained" },
   { icon: Inbox, label: "Inbox triage", description: "Sorts and prioritizes emails across multiple properties" },
   { icon: CalendarDays, label: "Morning briefings", description: "Daily rundown of reservations, tasks, and priorities" },
   { icon: Star, label: "Review monitoring", description: "Watches Google, Yelp, and TripAdvisor — drafts responses" },
   { icon: Search, label: "SEO audits", description: "Weekly site audits and keyword tracking" },
   { icon: Share2, label: "Social media", description: "Schedules and posts content across platforms" },
+  { icon: Ticket, label: "Booking & ticketing", description: "Custom checkout platforms for tours and a 538-seat theater" },
 ];
 
 export default function About() {
@@ -123,11 +126,15 @@ export default function About() {
           className="space-y-8 text-lg leading-relaxed text-white/60"
         >
           <p>
-            I started building AI agents for my own businesses. Stuff like
-            sorting through our inboxes, putting together morning briefings,
-            keeping an eye on reviews, running SEO checks, posting to social
-            media. Nothing flashy &mdash; just taking the tedious stuff off
-            our plate so we could spend time on things that matter more.
+            I started building AI agents for my own businesses. It began with
+            the tedious stuff &mdash; sorting through our inboxes, putting
+            together morning briefings, keeping an eye on reviews, running SEO
+            checks, posting to social media. Then it grew: a voice agent that
+            answers the hotel phone at 2am and quotes real room prices, a
+            pricing engine that reprices 75 cabins every night, a booking
+            platform that replaced thousands of dollars a year in software
+            fees. Nothing flashy &mdash; just systems that quietly do work we
+            used to pay for or lose sleep over.
           </p>
         </motion.div>
 
@@ -173,27 +180,36 @@ export default function About() {
           </p>
 
           <p>
-            That&apos;s basically how{" "}
+            That&apos;s how{" "}
             <span className="font-semibold text-white">Triple 3 Labs</span>{" "}
-            happened. There was no big master plan. I just kept helping people
-            and eventually figured I should put a name on it.
+            started. There was no big master plan &mdash; I kept helping
+            people, the systems kept working, and it turned into something I
+            take seriously.
           </p>
 
           {/* Divider */}
           <div className="h-px bg-white/[0.06]" />
 
           <p>
-            I should be upfront &mdash; this is a side project. I&apos;m not
-            trying to build some big agency or take on a hundred clients. I work
-            with a handful of businesses here in Holmes County and nearby. People
-            I know, industries I understand. That&apos;s it.
+            Here&apos;s how I run it: I keep the client roster deliberately
+            small. This isn&apos;t a hundred-client agency where your account
+            gets handed to whoever&apos;s free &mdash; every agent I take on
+            is one I design, build, and manage myself. When you work with
+            Triple 3 Labs, you&apos;re working with me.
           </p>
 
           <p>
-            I think that actually matters, though. These AI agents work a lot
+            That matters more than it sounds. These AI agents work a lot
             better when the person setting them up gets how your business
             actually runs &mdash; your tools, your customers, the stuff that
-            eats up your day. It&apos;s hard to do that from a distance.
+            eats up your day. And everything I sell is something I already run
+            in my own companies. I&apos;m my own first client, which means by
+            the time an agent reaches you, it&apos;s been answering my phones
+            and watching my reviews for months. You can{" "}
+            <Link href="/work" className="font-semibold text-white underline decoration-violet/50 underline-offset-4 transition-colors hover:decoration-violet">
+              see the actual systems here
+            </Link>
+            .
           </p>
 
           <p>
@@ -204,8 +220,9 @@ export default function About() {
           </p>
 
           <p className="text-white/40">
-            If any of this sounds interesting and you want to chat about it,
-            reach out. No pressure, no sales pitch. Just a conversation.
+            If any of this sounds interesting, reach out. No pressure, no
+            sales pitch &mdash; just a conversation about where an agent
+            could actually help.
           </p>
         </motion.div>
 
@@ -220,7 +237,7 @@ export default function About() {
             href="/#contact"
             className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-violet to-purple px-8 py-4 text-base font-semibold text-white transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(124,58,237,0.5)]"
           >
-            <span className="relative z-10">Let&apos;s Talk</span>
+            <span className="relative z-10">Get Your Free AI Assessment</span>
             <ArrowRight
               size={18}
               className="relative z-10 transition-transform group-hover:translate-x-1"

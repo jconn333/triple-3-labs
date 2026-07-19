@@ -60,10 +60,11 @@ export default function ContactForm() {
           className="text-2xl font-bold text-white mb-2"
           style={{ fontFamily: "var(--font-space-grotesk)" }}
         >
-          Message Received!
+          You&apos;re on the books!
         </h3>
         <p className="text-white/50">
-          We&apos;ll review your project and get back to you within 24 hours.
+          We&apos;ll reach out within 24 hours to set up your free AI
+          assessment.
         </p>
         <button
           onClick={() => setSubmitted(false)}
@@ -134,13 +135,13 @@ export default function ContactForm() {
 
       <div>
         <label className={labelClasses}>
-          Tell us about your project <span className="text-red-400">*</span>
+          Tell us about your business <span className="text-red-400">*</span>
         </label>
         <textarea
           {...register("message")}
           rows={4}
           className={inputClasses + " resize-none"}
-          placeholder="Describe your project, goals, and any challenges you're looking to solve..."
+          placeholder="What does your business do — and what eats up the most time each week?"
         />
         {errors.message && (
           <p className={errorClasses}>{errors.message.message}</p>
@@ -153,7 +154,7 @@ export default function ContactForm() {
         className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-violet via-purple to-cyan px-10 py-4 text-lg font-semibold text-white transition-all hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(124,58,237,0.5)] disabled:opacity-50 disabled:hover:scale-100"
       >
         <span className="relative z-10">
-          {isSubmitting ? "Sending..." : "Send Message"}
+          {isSubmitting ? "Sending..." : "Book My Free AI Assessment"}
         </span>
         {isSubmitting ? (
           <Loader2 size={20} className="relative z-10 animate-spin" />

@@ -28,6 +28,16 @@ import {
   ClipboardCheck,
   Cpu,
   Rocket,
+  Phone,
+  MessageCircle,
+  CalendarCheck,
+  Receipt,
+  Inbox,
+  AlertTriangle,
+  CalendarClock,
+  Calculator,
+  Wrench,
+  MapPin,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -61,6 +71,16 @@ const iconMap: Record<string, LucideIcon> = {
   ClipboardCheck,
   Cpu,
   Rocket,
+  Phone,
+  MessageCircle,
+  CalendarCheck,
+  Receipt,
+  Inbox,
+  AlertTriangle,
+  CalendarClock,
+  Calculator,
+  Wrench,
+  MapPin,
 };
 
 export function resolveIcon(name: string): LucideIcon {

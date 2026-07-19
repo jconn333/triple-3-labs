@@ -364,12 +364,12 @@ const realEstate: VerticalConfig = {
     ],
   },
   cta: {
-    headline: "Ready to",
-    headlineAccent: "Supercharge",
+    headline: "Let's grab a coffee and",
+    headlineAccent: "talk about your brokerage.",
     description:
-      "Tell us about your brokerage and we'll show you exactly how AI agents can help your team close more deals with less busywork.",
+      "Tell us how leads come in and where your agents' hours go — and we'll map exactly where an AI agent would pay for itself. And if it wouldn't, we'll tell you that too.",
     footnote:
-      "No commitment required. We'll get back to you within 24 hours.",
+      "Free assessment · No commitment · We'll get back to you within 24 hours.",
   },
 };
 

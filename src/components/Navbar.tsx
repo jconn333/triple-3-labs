@@ -9,9 +9,9 @@ import { LogoIcon } from "@/components/Logo";
 const navLinks = [
   { label: "Agents", href: "/#agents" },
   { label: "Services", href: "/#services" },
-  { label: "Process", href: "/#process" },
   { label: "About", href: "/about" },
-  { label: "Case Studies", href: "/blog", highlight: true },
+  { label: "Blog", href: "/blog" },
+  { label: "Case Studies", href: "/work", highlight: true },
   { label: "Contact", href: "/#contact" },
 ];
 
@@ -78,7 +78,7 @@ export default function Navbar() {
             href="/#contact"
             className="rounded-full bg-gradient-to-r from-violet to-purple px-5 py-2 text-sm font-medium text-white transition-all hover:shadow-[0_0_20px_rgba(124,58,237,0.4)] hover:scale-105"
           >
-            Get Started
+            Free AI Assessment
           </Link>
         </div>
 
@@ -128,7 +128,7 @@ export default function Navbar() {
                 onClick={() => setMobileOpen(false)}
                 className="mt-2 rounded-full bg-gradient-to-r from-violet to-purple px-5 py-3 text-center text-sm font-medium text-white"
               >
-                Get Started
+                Free AI Assessment
               </Link>
             </div>
           </motion.div>

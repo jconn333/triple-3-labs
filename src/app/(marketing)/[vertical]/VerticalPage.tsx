@@ -644,14 +644,15 @@ export default function VerticalPage({ config }: { config: VerticalConfig }) {
           className="relative z-10 mx-auto max-w-2xl"
         >
           <div className="mb-8 text-center">
+            <span className="mb-4 inline-block text-sm font-medium uppercase tracking-widest text-violet-400">
+              Free AI Assessment
+            </span>
             <h2
               className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl"
               style={{ fontFamily: "var(--font-space-grotesk)" }}
             >
               {config.cta.headline}{" "}
               <span className="gradient-text">{config.cta.headlineAccent}</span>
-              <br />
-              Your {config.industry}?
             </h2>
             <p className="mx-auto max-w-xl text-lg text-white/50">
               {config.cta.description}
