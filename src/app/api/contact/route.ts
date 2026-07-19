@@ -3,6 +3,7 @@ import { z } from "zod";
 import { scoreLeadWithAI } from "@/lib/ai/lead-scoring";
 import type { ContactFormData } from "@/lib/crm/types";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendSlackMessage } from "@/lib/notifications/slack";
 
 const contactSchema = z.object({
   name: z.string().min(1).max(100),
@@ -129,31 +130,20 @@ async function sendSlackNotification(
   data: ContactFormData,
   score: { score: number; label: string; reasoning: string }
 ) {
-  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
-  if (!webhookUrl) return;
-
   const emoji = score.label === "hot" ? "🔥" : score.label === "warm" ? "🟡" : "🔵";
-  const response = await fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      blocks: [
-        { type: "header", text: { type: "plain_text", text: `${emoji} New Lead: ${data.name}` } },
-        { type: "section", fields: [
-          { type: "mrkdwn", text: `*Email:*\n${data.email}` },
-          { type: "mrkdwn", text: `*Company:*\n${data.company || "N/A"}` },
-          { type: "mrkdwn", text: `*Phone:*\n${data.phone || "N/A"}` },
-          { type: "mrkdwn", text: `*Score:*\n${score.score}/100 (${score.label})` },
-        ]},
-        { type: "section", text: { type: "mrkdwn", text: `*Message:*\n>${data.message.slice(0, 500)}` } },
-        { type: "context", elements: [{ type: "mrkdwn", text: `*AI:* ${score.reasoning}` }] },
-      ],
-    }),
+  await sendSlackMessage({
+    blocks: [
+      { type: "header", text: { type: "plain_text", text: `${emoji} New Lead: ${data.name}` } },
+      { type: "section", fields: [
+        { type: "mrkdwn", text: `*Email:*\n${data.email}` },
+        { type: "mrkdwn", text: `*Company:*\n${data.company || "N/A"}` },
+        { type: "mrkdwn", text: `*Phone:*\n${data.phone || "N/A"}` },
+        { type: "mrkdwn", text: `*Score:*\n${score.score}/100 (${score.label})` },
+      ]},
+      { type: "section", text: { type: "mrkdwn", text: `*Message:*\n>${data.message.slice(0, 500)}` } },
+      { type: "context", elements: [{ type: "mrkdwn", text: `*AI:* ${score.reasoning}` }] },
+    ],
   });
-
-  if (!response.ok) {
-    throw new Error(`Slack webhook failed with status ${response.status}`);
-  }
 }
 
 async function sendEmailNotification(

@@ -148,3 +148,128 @@ export interface LeadScore {
   label: "hot" | "warm" | "cold";
   reasoning: string;
 }
+
+// ---- Ticketing system ----
+
+export type TicketChannel = "portal" | "email" | "internal" | "canary";
+export type TicketStatus =
+  | "new"
+  | "triaging"
+  | "awaiting_customer"
+  | "pending_approval"
+  | "fixing"
+  | "verifying"
+  | "resolved"
+  | "escalated"
+  | "closed";
+export type TicketSeverity = "low" | "normal" | "high" | "urgent";
+export type TicketMessageAuthorType = "customer" | "ai" | "staff" | "system";
+export type DiagnosisConfidence = "low" | "medium" | "high";
+export type RunbookActionType = "none" | "ssh_allowlisted" | "telemetry_check" | string;
+export type TicketActionStatus =
+  | "proposed"
+  | "approved"
+  | "rejected"
+  | "executing"
+  | "executed"
+  | "verified"
+  | "failed"
+  | "rolled_back";
+
+export interface Ticket {
+  id: string;
+  ticket_number: number;
+  account_id: string | null;
+  contact_id: string | null;
+  submitter_email: string | null;
+  subject: string;
+  description: string;
+  channel: TicketChannel;
+  agent_id: string | null;
+  status: TicketStatus;
+  severity: TicketSeverity;
+  tier: number | null;
+  reopened_count: number;
+  escalation_reason: string | null;
+  resolved_at: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  account?: Pick<Account, "id" | "name"> | null;
+  contact?: Pick<Contact, "id" | "first_name" | "last_name" | "email"> | null;
+  message_count?: number;
+}
+
+export interface TicketMessage {
+  id: string;
+  ticket_id: string;
+  author_type: TicketMessageAuthorType;
+  author_name: string | null;
+  body: string;
+  is_internal: boolean;
+  created_at: string;
+}
+
+export interface TicketDiagnosis {
+  id: string;
+  ticket_id: string;
+  category: string;
+  summary: string;
+  evidence: unknown;
+  telemetry: unknown;
+  matched_runbook_key: string | null;
+  proposed_tier: number;
+  confidence: DiagnosisConfidence | null;
+  could_reproduce: boolean | null;
+  model: string | null;
+  raw: unknown;
+  created_at: string;
+}
+
+export interface Runbook {
+  key: string;
+  title: string;
+  description: string | null;
+  tier: number;
+  action_type: RunbookActionType;
+  action_params_schema: unknown;
+  verify_spec: unknown;
+  rollback_spec: unknown;
+  enabled: boolean;
+  times_executed: number;
+  times_approved: number;
+  times_rolled_back: number;
+  auto_approve_threshold: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TicketAction {
+  id: string;
+  ticket_id: string;
+  runbook_key: string;
+  tier: number;
+  action_params: unknown;
+  status: TicketActionStatus;
+  approval_token: string | null;
+  approved_by: string | null;
+  decided_at: string | null;
+  executed_at: string | null;
+  verified_at: string | null;
+  result: unknown;
+  error: string | null;
+  created_at: string;
+  // Joined fields
+  runbook?: Pick<Runbook, "key" | "title" | "description" | "tier"> | null;
+}
+
+export interface TicketFormData {
+  name: string;
+  email: string;
+  company?: string;
+  subject: string;
+  description: string;
+  severity: TicketSeverity;
+  agent_id?: string;
+}
