@@ -95,10 +95,13 @@ export async function PATCH(
     if (updates.status === "closed") {
       patch.closed_at = new Date().toISOString();
     }
-    // Reopen semantics: a resolved ticket re-set to 'new' always escalates on
-    // the worker side — track the reopen count so it never gets auto-fixed twice.
-    if (updates.status === "new" && current.status === "resolved") {
+    // Reopen semantics: a resolved OR closed ticket re-set to 'new' always
+    // escalates on the worker side — track the reopen count so it never gets
+    // auto-fixed twice, and clear the stale terminal timestamps.
+    if (updates.status === "new" && (current.status === "resolved" || current.status === "closed")) {
       patch.reopened_count = (current.reopened_count ?? 0) + 1;
+      patch.resolved_at = null;
+      patch.closed_at = null;
     }
 
     const { data: ticket, error } = await supabase

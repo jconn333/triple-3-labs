@@ -31,10 +31,13 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient();
 
     // Look up an existing contact by email (case-insensitive) to link the ticket.
+    // ILIKE treats % and _ as wildcards — escape them so an email can only ever
+    // match itself, never pattern-match onto a different contact's account.
+    const emailPattern = data.email.replace(/[\\%_]/g, "\\$&");
     const { data: contact } = await supabase
       .from("contacts")
       .select("id")
-      .ilike("email", data.email)
+      .ilike("email", emailPattern)
       .limit(1)
       .maybeSingle();
 
@@ -62,7 +65,7 @@ export async function POST(request: NextRequest) {
         status: "new",
         severity: data.severity,
       })
-      .select("id, ticket_number")
+      .select("id, ticket_number, view_token")
       .single();
 
     if (ticketError || !ticket) {
@@ -82,6 +85,11 @@ export async function POST(request: NextRequest) {
       console.error("Ticket message insert error:", messageError);
     }
 
+    // Never derive the emailed link from the request's Host header — a spoofed
+    // Host must not be able to point "Track your ticket" at another domain.
+    const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://triple3labs.io").replace(/\/$/, "");
+    const viewUrl = `${baseUrl}/ticket/${ticket.id}?token=${ticket.view_token}`;
+
     after(async () => {
       const results = await Promise.allSettled([
         sendSlackMessage({
@@ -94,6 +102,7 @@ export async function POST(request: NextRequest) {
             toName: data.name,
             ticketNumber: ticket.ticket_number,
             subject: data.subject,
+            viewUrl,
           });
         })(),
       ]);
@@ -106,7 +115,10 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    return NextResponse.json({ success: true, ticket_number: ticket.ticket_number }, { status: 201 });
+    return NextResponse.json(
+      { success: true, ticket_number: ticket.ticket_number, view_url: viewUrl },
+      { status: 201 }
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid form data", details: error.issues }, { status: 400 });

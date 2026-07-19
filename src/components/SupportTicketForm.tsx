@@ -23,6 +23,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function SupportTicketForm() {
   const [ticketNumber, setTicketNumber] = useState<number | null>(null);
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
 
   const {
     register,
@@ -48,6 +49,7 @@ export default function SupportTicketForm() {
       }
 
       setTicketNumber(result.ticket_number);
+      setViewUrl(result.view_url ?? null);
       reset();
       toast.success("Ticket submitted!");
     } catch (error) {
@@ -66,9 +68,20 @@ export default function SupportTicketForm() {
           Our AI triage system is reviewing it now. We&apos;ll follow up by email if we need anything else —
           keep your ticket number handy for reference.
         </p>
+        {viewUrl && (
+          <a
+            href={viewUrl}
+            className="mt-4 inline-block text-sm font-medium text-violet hover:text-violet/80 underline"
+          >
+            Track your ticket
+          </a>
+        )}
         <button
-          onClick={() => setTicketNumber(null)}
-          className="mt-4 text-sm text-violet hover:text-violet/80 underline"
+          onClick={() => {
+            setTicketNumber(null);
+            setViewUrl(null);
+          }}
+          className="mt-4 block w-full text-sm text-white/40 hover:text-white/60 underline"
         >
           Submit another ticket
         </button>

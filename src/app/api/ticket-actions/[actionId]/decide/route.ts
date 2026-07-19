@@ -25,7 +25,7 @@ export async function POST(
     // second link) can never approve/reject twice.
     const updateFields =
       decision === "approve"
-        ? { status: "approved", approved_by: "jeff (discord link)", decided_at: nowIso }
+        ? { status: "approved", approved_by: "jeff (web link)", decided_at: nowIso }
         : { status: "rejected", decided_at: nowIso };
 
     const { data: updated, error } = await admin

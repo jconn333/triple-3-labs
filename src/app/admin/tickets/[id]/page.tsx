@@ -17,6 +17,10 @@ import {
   Wrench,
   Gauge,
   ListChecks,
+  Link2,
+  Copy,
+  Check,
+  Undo2,
 } from "lucide-react";
 import { formatDate, formatRelativeTime } from "@/lib/utils/format";
 import TicketStatusBadge from "@/components/admin/TicketStatusBadge";
@@ -78,6 +82,9 @@ export default function TicketDetailPage() {
   const [replyBody, setReplyBody] = useState("");
   const [replyInternal, setReplyInternal] = useState(false);
   const [sending, setSending] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [confirmRollbackId, setConfirmRollbackId] = useState<string | null>(null);
+  const [rollingBackId, setRollingBackId] = useState<string | null>(null);
 
   const fetchTicket = useCallback(async () => {
     try {
@@ -135,6 +142,43 @@ export default function TicketDetailPage() {
       toast.error("Failed to send reply");
     } finally {
       setSending(false);
+    }
+  }
+
+  function customerViewUrl(): string {
+    if (!ticket) return "";
+    const base =
+      (process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== "undefined" ? window.location.origin : "")).replace(
+        /\/$/,
+        ""
+      );
+    return `${base}/ticket/${ticket.id}?token=${ticket.view_token}`;
+  }
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(customerViewUrl());
+      setLinkCopied(true);
+      toast.success("Customer link copied");
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  }
+
+  async function handleRollback(actionId: string) {
+    setRollingBackId(actionId);
+    try {
+      const res = await fetch(`/api/ticket-actions/${actionId}/rollback`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to roll back");
+      toast.success("Fix marked as rolled back — ticket escalated");
+      setConfirmRollbackId(null);
+      fetchTicket();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to roll back");
+    } finally {
+      setRollingBackId(null);
     }
   }
 
@@ -202,6 +246,19 @@ export default function TicketDetailPage() {
           <span className="flex items-center gap-1.5">
             <Clock size={12} /> Opened {formatDate(ticket.created_at)}
           </span>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2 text-xs text-white/40">
+          <Link2 size={12} className="shrink-0 text-white/30" />
+          <span className="hidden sm:inline">Customer link:</span>
+          <code className="truncate rounded bg-white/5 px-2 py-1 text-[11px] text-white/50">{customerViewUrl()}</code>
+          <button
+            onClick={handleCopyLink}
+            className="flex shrink-0 items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            {linkCopied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+            {linkCopied ? "Copied" : "Copy"}
+          </button>
         </div>
 
         {ticket.status === "escalated" && ticket.escalation_reason && (
@@ -374,6 +431,39 @@ export default function TicketDetailPage() {
                       <pre className="mt-2 overflow-x-auto rounded bg-black/30 p-2 text-[11px] text-white/50">
                         {JSON.stringify(a.result, null, 2)}
                       </pre>
+                    )}
+                    {(a.status === "executed" || a.status === "verified") && (
+                      <div className="mt-3 border-t border-white/5 pt-3">
+                        {confirmRollbackId === a.id ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-amber-300">
+                              Roll back this fix and escalate the ticket?
+                            </span>
+                            <button
+                              onClick={() => handleRollback(a.id)}
+                              disabled={rollingBackId === a.id}
+                              className="rounded-lg bg-rose-500/20 px-3 py-1 text-xs font-medium text-rose-300 transition-colors hover:bg-rose-500/30 disabled:opacity-50"
+                            >
+                              {rollingBackId === a.id ? "Rolling back..." : "Confirm rollback"}
+                            </button>
+                            <button
+                              onClick={() => setConfirmRollbackId(null)}
+                              disabled={rollingBackId === a.id}
+                              className="rounded-lg border border-white/10 px-3 py-1 text-xs font-medium text-white/50 transition-colors hover:bg-white/5 disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmRollbackId(a.id)}
+                            className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1 text-xs font-medium text-white/50 transition-colors hover:bg-white/5 hover:text-white"
+                          >
+                            <Undo2 size={12} />
+                            Mark rolled back
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}

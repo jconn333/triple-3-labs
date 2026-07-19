@@ -151,7 +151,7 @@ export interface LeadScore {
 
 // ---- Ticketing system ----
 
-export type TicketChannel = "portal" | "email" | "internal" | "canary";
+export type TicketChannel = "portal" | "email" | "internal" | "canary" | "pingo";
 export type TicketStatus =
   | "new"
   | "triaging"
@@ -191,6 +191,10 @@ export interface Ticket {
   tier: number | null;
   reopened_count: number;
   escalation_reason: string | null;
+  /** Token for the public /ticket/[id]?token= customer view. */
+  view_token: string;
+  /** Origin metadata for non-portal tickets, e.g. {"pingo_channel_id","pingo_message_id","pingo_user_id","author_name"}. */
+  source_meta: Record<string, unknown> | null;
   resolved_at: string | null;
   closed_at: string | null;
   created_at: string;
