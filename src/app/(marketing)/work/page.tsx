@@ -14,11 +14,6 @@ export const metadata: Metadata = {
 
 const alsoBuilt = [
   {
-    title: "Zendini",
-    description: "A seat-map ticketing platform for a 538-seat theater — storefront, box office, and everything between.",
-    blogSlug: "building-zendini",
-  },
-  {
     title: "Spam Slayer",
     description: "A multi-tenant IMAP spam filter with a hybrid rules-plus-AI pipeline that thinks before it quarantines.",
     blogSlug: "building-spam-slayer",
@@ -56,10 +51,10 @@ export default function WorkPage() {
 
           <div className="mx-auto mt-10 grid max-w-2xl grid-cols-2 gap-6 sm:grid-cols-4">
             {[
-              { value: "8+", label: "Systems in production" },
+              { value: "12+", label: "Systems in production" },
               { value: "2", label: "Voice agents on the phones 24/7" },
               { value: "75", label: "Properties priced nightly" },
-              { value: "3", label: "Industries served" },
+              { value: "6", label: "Companies running these systems" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p

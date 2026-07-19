@@ -5,6 +5,12 @@ import regyPro from "./regy-pro";
 import priceyPro from "./pricey-pro";
 import reputationAgent from "./reputation-agent";
 import aiChiefOfStaff from "./ai-chief-of-staff";
+import pingo from "./pingo";
+import zendini from "./zendini";
+import spendaroo from "./spendaroo";
+import otto from "./otto";
+import seoAgent from "./seo-agent";
+import pilotBilling from "./pilot-billing";
 
 export type { CaseStudy, CaseStudyResult, CaseStudySolution } from "./types";
 
@@ -16,6 +22,12 @@ export const caseStudies: CaseStudy[] = [
   priceyPro,
   reputationAgent,
   aiChiefOfStaff,
+  pingo,
+  zendini,
+  spendaroo,
+  otto,
+  seoAgent,
+  pilotBilling,
 ];
 
 export function getBySlug(slug: string): CaseStudy | undefined {

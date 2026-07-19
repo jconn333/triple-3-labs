@@ -23,8 +23,10 @@ export interface CaseStudy {
   stack: string[];
   results: CaseStudyResult[];
   pullQuote?: string;
-  /** Slug of the full build-story post at /blog/<blogSlug>. */
+  /** Slug of the related post at /blog/<blogSlug>. */
   blogSlug: string;
+  /** Override link text when blogSlug isn't a build narrative (defaults to "Read the full build story"). */
+  blogLinkLabel?: string;
   /** Tailwind gradient stops, e.g. "from-violet to-purple". */
   gradient: string;
   /** Plain color name used for text/border accents, e.g. "violet". */

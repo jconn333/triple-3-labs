@@ -205,7 +205,7 @@ export default async function CaseStudyPage({
           href={`/blog/${caseStudy.blogSlug}`}
           className="inline-flex items-center gap-1.5 text-base font-medium text-violet-400 transition-all hover:gap-2.5"
         >
-          Read the full build story
+          {caseStudy.blogLinkLabel ?? "Read the full build story"}
           <ArrowRight size={16} />
         </Link>
       </section>
