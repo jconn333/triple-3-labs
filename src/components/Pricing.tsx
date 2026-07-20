@@ -414,7 +414,7 @@ export default function Pricing() {
           className="flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-6 sm:flex-row"
         >
           <p className="text-xs text-white/25">
-            All plans require a 6-month minimum commitment.
+            No long-term contracts — cancel anytime.
           </p>
           <div className="flex items-center gap-4">
             <p className="text-sm font-semibold text-white/60">

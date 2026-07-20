@@ -133,10 +133,10 @@ const faqCategories: FaqCategory[] = [
           "Every plan includes a base retainer plus the underlying API costs (AI model usage, voice minutes beyond your included allotment, etc.) passed through at cost. In practice it's typically a modest amount that scales with how much your agent is used, and we review it with you monthly so there are no surprises.",
       },
       {
-        id: "six-month-commitment",
-        question: "Why a 6-month commitment?",
+        id: "no-lock-in",
+        question: "Do I have to sign a long-term contract?",
         answer:
-          "Because agents get better with time — the first few weeks are tuning and calibration, and the real ROI shows up once the agent has handled a real volume of conversations. Six months gives it room to prove out and gives us room to optimize it properly.",
+          "No — there's no minimum commitment. We've all worked with agencies that lock you into a year-long contract for something you end up unhappy with three months in. We'd rather earn it every month: the agent has to keep proving its value, or you're free to walk. No hard feelings, no early-termination fee.",
       },
       {
         id: "why-setup-fee",
@@ -148,7 +148,7 @@ const faqCategories: FaqCategory[] = [
         id: "cancel-change-plans",
         question: "What if I want to cancel or change plans?",
         answer:
-          "After your 6-month minimum, you can cancel or change plans. If your needs grow, moving up a tier is straightforward. Reach out and we'll walk through the options together.",
+          "Cancel or change plans anytime — there's no minimum term to wait out. If your needs grow, moving up a tier is straightforward. Reach out and we'll walk through the options together.",
       },
     ],
   },
