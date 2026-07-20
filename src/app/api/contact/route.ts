@@ -4,6 +4,7 @@ import { scoreLeadWithAI } from "@/lib/ai/lead-scoring";
 import type { ContactFormData } from "@/lib/crm/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSlackMessage } from "@/lib/notifications/slack";
+import { sendPingoDM } from "@/lib/notifications/pingo";
 
 const contactSchema = z.object({
   name: z.string().min(1).max(100),
@@ -103,11 +104,12 @@ export async function POST(request: NextRequest) {
             }),
           sendSlackNotification(data, score),
           sendEmailNotification(data, score),
+          sendPingoNotification(data, score, contact.id),
         ]);
 
         results.forEach((result, index) => {
           if (result.status === "rejected") {
-            const label = ["contact score update", "AI scoring activity", "Slack notification", "Email notification"][index];
+            const label = ["contact score update", "AI scoring activity", "Slack notification", "Email notification", "Pingo DM"][index];
             console.error(`${label} error:`, result.reason);
           }
         });
@@ -144,6 +146,27 @@ async function sendSlackNotification(
       { type: "context", elements: [{ type: "mrkdwn", text: `*AI:* ${score.reasoning}` }] },
     ],
   });
+}
+
+async function sendPingoNotification(
+  data: ContactFormData,
+  score: { score: number; label: string; reasoning: string },
+  contactId: string
+) {
+  const emoji = score.label === "hot" ? "🔥" : score.label === "warm" ? "🟡" : "🔵";
+  const lines = [
+    `${emoji} New Lead: ${data.name}`,
+    `Score: ${score.score}/100 (${score.label})`,
+    "",
+    `Email: ${data.email}`,
+    `Company: ${data.company || "N/A"}`,
+    `Phone: ${data.phone || "N/A"}`,
+    "",
+    data.message.slice(0, 500),
+    "",
+    `AI: ${score.reasoning}`,
+  ];
+  await sendPingoDM(lines.join("\n"), `lead-${contactId}`);
 }
 
 async function sendEmailNotification(
