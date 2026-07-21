@@ -192,14 +192,18 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Scoped to the properties that actually change on hover. `all` also
+     animated layout properties, which is what made cards feel loose. */
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Hover reads as the card lighting up, not lifting off the page. */
 .glass-card:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(124, 58, 237, 0.3);
   box-shadow: 0 0 40px rgba(124, 58, 237, 0.1), 0 0 80px rgba(124, 58, 237, 0.05);
-  transform: translateY(-4px);
 }
 
 /* Gradient text */
