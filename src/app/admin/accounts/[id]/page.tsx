@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import {
   Mail, Building2, Upload, ExternalLink, FileText,
   Download, Trash2, Clock, CreditCard, ArrowRight,
-  Sparkles, Receipt, PenLine, Stamp,
+  Sparkles, Receipt, PenLine, Stamp, ClipboardList,
+  ClipboardCheck, Send, X, RefreshCw, Copy, Check,
 } from "lucide-react";
 import { formatDate, formatRelativeTime, formatCurrency } from "@/lib/utils/format";
 import AccountStatusBadge from "@/components/admin/AccountStatusBadge";
@@ -15,7 +16,9 @@ import ContractUploadModal from "@/components/admin/ContractUploadModal";
 import SendSignatureModal from "@/components/admin/SendSignatureModal";
 import CounterSignModal from "@/components/admin/CounterSignModal";
 import StartSubscriptionModal from "@/components/admin/StartSubscriptionModal";
-import type { Account, Contract, Activity, SubscriptionSummary, InvoiceSummary } from "@/lib/crm/types";
+import SendOnboardingModal from "@/components/admin/SendOnboardingModal";
+import { getFormSpec } from "@/lib/onboarding/forms";
+import type { Account, Contract, Activity, SubscriptionSummary, InvoiceSummary, OnboardingRequest } from "@/lib/crm/types";
 
 export default function AccountDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +33,17 @@ export default function AccountDetailPage() {
   const [sigContract, setSigContract] = useState<Contract | null>(null);
   const [counterSignContract, setCounterSignContract] = useState<Contract | null>(null);
   const [showStartSub, setShowStartSub] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingRequests, setOnboardingRequests] = useState<OnboardingRequest[]>([]);
+  const [onboardingLoading, setOnboardingLoading] = useState(true);
+  const [resendResult, setResendResult] = useState<{
+    requestId: string;
+    onboarding_url: string;
+    email_sent: boolean;
+    email_error?: string;
+  } | null>(null);
+  const [resendCopied, setResendCopied] = useState(false);
+  const [resending, setResending] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const notesTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -71,6 +85,77 @@ export default function AccountDetailPage() {
   useEffect(() => {
     fetchStripeData();
   }, [fetchStripeData]);
+
+  // Lazy-load onboarding requests
+  const fetchOnboarding = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/accounts/${id}/onboarding`);
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      setOnboardingRequests(data.requests || []);
+    } catch {
+      // Silently fail — onboarding requests are optional
+    } finally {
+      setOnboardingLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchOnboarding();
+  }, [fetchOnboarding]);
+
+  async function handleCancelOnboarding(requestId: string) {
+    if (!confirm("Cancel this onboarding request? The recipient's link will stop working.")) return;
+    try {
+      const res = await fetch(`/api/accounts/${id}/onboarding?requestId=${requestId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast.success("Onboarding request cancelled");
+      fetchOnboarding();
+    } catch {
+      toast.error("Failed to cancel onboarding request");
+    }
+  }
+
+  async function handleResendOnboarding(r: OnboardingRequest) {
+    if (
+      !confirm("Generate a new link? The previous link will stop working immediately.")
+    )
+      return;
+    setResending(r.id);
+    try {
+      const res = await fetch(`/api/accounts/${id}/onboarding`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId: r.id,
+          send_email: Boolean(r.recipient_email),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to resend link");
+      setResendResult({
+        requestId: r.id,
+        onboarding_url: data.onboarding_url,
+        email_sent: data.email_sent,
+        email_error: data.email_error,
+      });
+      toast.success(data.email_sent ? "New link emailed" : "New link generated");
+      fetchOnboarding();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to resend onboarding link");
+    } finally {
+      setResending(null);
+    }
+  }
+
+  async function copyResendLink() {
+    if (!resendResult) return;
+    await navigator.clipboard.writeText(resendResult.onboarding_url);
+    setResendCopied(true);
+    setTimeout(() => setResendCopied(false), 2000);
+  }
 
   // Auto-save notes with debounce
   function handleNotesChange(value: string) {
@@ -155,6 +240,22 @@ export default function AccountDetailPage() {
   const signedRoles = (c: Contract) =>
     new Set((c.signatures || []).filter((s) => s.status === "signed").map((s) => s.signer_role));
 
+  const onboardingStatusColors: Record<string, string> = {
+    pending: "text-zinc-400 bg-zinc-500/10 border-zinc-500/20",
+    viewed: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+    submitted: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+    expired: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+    cancelled: "text-rose-400 bg-rose-500/10 border-rose-500/20",
+  };
+
+  const onboardingTimestamp = (r: OnboardingRequest) => {
+    if (r.status === "submitted" && r.submitted_at) return `Submitted ${formatDate(r.submitted_at)}`;
+    if (r.status === "viewed" && r.viewed_at) return `Viewed ${formatDate(r.viewed_at)}`;
+    if (r.status === "cancelled") return `Sent ${r.sent_at ? formatDate(r.sent_at) : "—"} · cancelled`;
+    if (r.status === "expired") return `Expired ${r.expires_at ? formatDate(r.expires_at) : ""}`;
+    return r.sent_at ? `Sent ${formatDate(r.sent_at)}` : `Created ${formatDate(r.created_at)}`;
+  };
+
   const activityIcons: Record<string, typeof Clock> = {
     account_created: Building2,
     contract_uploaded: FileText,
@@ -165,6 +266,8 @@ export default function AccountDetailPage() {
     form_submission: FileText,
     stage_change: ArrowRight,
     note: FileText,
+    onboarding_sent: Send,
+    onboarding_submitted: ClipboardCheck,
   };
 
   return (
@@ -225,6 +328,12 @@ export default function AccountDetailPage() {
               className="w-full flex items-center gap-2 rounded-lg bg-violet/10 px-4 py-2.5 text-sm font-medium text-violet hover:bg-violet/20 transition-colors"
             >
               <Upload size={16} /> Upload Contract
+            </button>
+            <button
+              onClick={() => setShowOnboarding(true)}
+              className="w-full flex items-center gap-2 rounded-lg bg-violet/10 px-4 py-2.5 text-sm font-medium text-violet hover:bg-violet/20 transition-colors"
+            >
+              <ClipboardList size={16} /> Onboarding
             </button>
             {account.stripe_customer_id && (
               <a
@@ -314,6 +423,162 @@ export default function AccountDetailPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* Onboarding */}
+          <div className="glass-card rounded-xl p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40">Onboarding</h3>
+              <button
+                onClick={() => setShowOnboarding(true)}
+                className="text-xs text-violet hover:text-violet/80"
+              >
+                + Send
+              </button>
+            </div>
+            {onboardingLoading ? (
+              <div className="space-y-3">
+                <div className="h-16 animate-pulse rounded-lg bg-white/5" />
+              </div>
+            ) : onboardingRequests.length === 0 ? (
+              <p className="py-4 text-center text-sm text-white/30">No onboarding requests yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {onboardingRequests.map((r) => {
+                  const spec = getFormSpec(r.form_key);
+                  const isOpen = r.status === "pending" || r.status === "viewed";
+                  return (
+                    <div key={r.id} className="rounded-lg bg-white/[0.03] p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-white truncate">
+                            {spec?.title || r.form_key}
+                          </p>
+                          <p className="mt-0.5 text-xs text-white/40">
+                            {r.recipient_name ? `${r.recipient_name} · ` : ""}
+                            {r.recipient_email}
+                          </p>
+                          <p className="mt-0.5 text-[10px] text-white/30">{onboardingTimestamp(r)}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                              onboardingStatusColors[r.status] || onboardingStatusColors.pending
+                            }`}
+                          >
+                            {r.status}
+                          </span>
+                          {r.status !== "submitted" && (
+                            <button
+                              onClick={() => handleResendOnboarding(r)}
+                              disabled={resending === r.id}
+                              className="text-white/30 hover:text-violet disabled:opacity-40"
+                              title="Resend link (generates a fresh link; the old one stops working)"
+                            >
+                              <RefreshCw size={14} className={resending === r.id ? "animate-spin" : ""} />
+                            </button>
+                          )}
+                          {isOpen && (
+                            <button
+                              onClick={() => handleCancelOnboarding(r.id)}
+                              className="text-white/30 hover:text-rose-400"
+                              title="Cancel request"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {resendResult && resendResult.requestId === r.id && (
+                        <div className="mt-3 space-y-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="flex items-center gap-2 text-xs font-medium text-emerald-300">
+                              <Check size={14} />
+                              {resendResult.email_sent
+                                ? "New link emailed — also copyable below:"
+                                : "New link generated — share it manually:"}
+                            </p>
+                            <button
+                              onClick={() => setResendResult(null)}
+                              className="shrink-0 text-white/40 hover:text-white/60"
+                              title="Dismiss"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                          {resendResult.email_error && (
+                            <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 p-2.5 text-[11px] text-amber-300">
+                              Email could not be sent: {resendResult.email_error} — the link itself is
+                              still valid.
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <input
+                              readOnly
+                              value={resendResult.onboarding_url}
+                              className="flex-1 truncate rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 outline-none"
+                            />
+                            <button
+                              onClick={copyResendLink}
+                              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-xs text-white/70 hover:bg-white/5"
+                            >
+                              {resendCopied ? (
+                                <Check size={14} className="text-emerald-400" />
+                              ) : (
+                                <Copy size={14} />
+                              )}
+                              {resendCopied ? "Copied" : "Copy"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {r.status === "submitted" && spec && (
+                        <div className="mt-4 space-y-4 border-t border-white/5 pt-4">
+                          {spec.sections.map((section, sIdx) => (
+                            <div key={sIdx}>
+                              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/30">
+                                {section.title}
+                              </p>
+                              <div className="space-y-2">
+                                {section.fields.map((field) => {
+                                  const answer = r.responses?.[field.key];
+                                  const detail = r.responses?.[`${field.key}_detail`];
+                                  return (
+                                    <div key={field.key} className="text-xs">
+                                      <p className="text-white/40">{field.label}</p>
+                                      {field.type === "checkbox" ? (
+                                        <p className="mt-0.5 text-white/80">
+                                          {answer === true ? "✓" : answer === false ? "✗" : (
+                                            <span className="text-white/30">—</span>
+                                          )}
+                                        </p>
+                                      ) : (
+                                        <p className="mt-0.5 whitespace-pre-wrap break-words text-white/80">
+                                          {typeof answer === "string" && answer.trim().length > 0 ? (
+                                            answer
+                                          ) : (
+                                            <span className="text-white/30">—</span>
+                                          )}
+                                          {typeof detail === "string" && detail.trim().length > 0 && (
+                                            <span className="text-white/50"> ({detail})</span>
+                                          )}
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -497,6 +762,20 @@ export default function AccountDetailPage() {
           defaultSignerEmail={contact?.email || ""}
           onClose={() => setSigContract(null)}
           onSent={fetchAccount}
+        />
+      )}
+
+      {/* Send Onboarding Modal */}
+      {showOnboarding && (
+        <SendOnboardingModal
+          accountId={id}
+          defaultRecipientName={contact ? `${contact.first_name} ${contact.last_name}`.trim() : ""}
+          defaultRecipientEmail={contact?.email || ""}
+          onClose={() => setShowOnboarding(false)}
+          onSent={() => {
+            fetchOnboarding();
+            fetchAccount();
+          }}
         />
       )}
     </div>

@@ -1,3 +1,5 @@
+import type { AccessGrant } from "@/lib/onboarding/forms";
+
 export interface Contact {
   id: string;
   first_name: string;
@@ -276,4 +278,24 @@ export interface TicketFormData {
   description: string;
   severity: TicketSeverity;
   agent_id?: string;
+}
+
+// ---- Client onboarding ----
+
+export type OnboardingStatus = "pending" | "viewed" | "submitted" | "expired" | "cancelled";
+
+export interface OnboardingRequest {
+  id: string;
+  account_id: string;
+  form_key: string;
+  recipient_name: string | null;
+  recipient_email: string;
+  status: OnboardingStatus;
+  access_grants: AccessGrant[] | null;
+  responses: Record<string, string | boolean> | null;
+  expires_at: string | null;
+  sent_at: string | null;
+  viewed_at: string | null;
+  submitted_at: string | null;
+  created_at: string;
 }
