@@ -7,7 +7,10 @@ export const dynamic = "force-dynamic";
 // unless it's already a full document.
 function toDocument(html: string): string {
   if (/^\s*<!doctype/i.test(html)) return html;
-  return `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8" />\n<meta name="viewport" content="width=device-width, initial-scale=1" />\n<meta name="robots" content="noindex, nofollow" />\n${html.includes("<title>") ? "" : "<title>SEO Report — Triple 3 Labs</title>\n"}</head>\n<body>${html}</body>\n</html>`;
+  const titleMatch = html.match(/<title>[\s\S]*?<\/title>/i);
+  const title = titleMatch?.[0] ?? "<title>SEO Report — Triple 3 Labs</title>";
+  const body = titleMatch ? html.replace(titleMatch[0], "") : html;
+  return `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8" />\n<meta name="viewport" content="width=device-width, initial-scale=1" />\n<meta name="robots" content="noindex, nofollow" />\n${title}\n</head>\n<body>${body}</body>\n</html>`;
 }
 
 export async function GET(
