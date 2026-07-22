@@ -50,14 +50,14 @@ function shellDocument(slug: string, reportTitle: string): string {
 <body>
 <header class="chrome">
   <a class="brand" href="https://triple3labs.io" target="_blank" rel="noopener">${LOGO_SVG}<span>Triple 3 <span class="grad">Labs</span></span></a>
-  <a class="portfolio-link" href="https://triple3labs.io/work" target="_blank" rel="noopener">View Our AI Agents &amp; Automations &rarr;</a>
+  <a class="portfolio-link" href="https://triple3labs.io" target="_blank" rel="noopener">View Our AI Agents &amp; Automations &rarr;</a>
 </header>
 <main>
   <iframe id="report" src="/r/${slug}?raw=1" title="${title}"></iframe>
 </main>
 <footer>
   <p>This report was researched, written, and designed by an AI agent built by Triple 3 Labs. We build agents like this one to run marketing, operations, and customer follow-up for small businesses.</p>
-  <a class="cta" href="https://triple3labs.io/work" target="_blank" rel="noopener">See what our agents can do</a>
+  <a class="cta" href="https://triple3labs.io" target="_blank" rel="noopener">See what our agents can do</a>
   <div class="fineprint">&copy; ${new Date().getFullYear()} Triple 3 Labs &middot; triple3labs.io</div>
 </footer>
 <script>
