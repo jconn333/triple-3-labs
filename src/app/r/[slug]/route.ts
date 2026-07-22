@@ -50,7 +50,7 @@ function shellDocument(slug: string, reportTitle: string): string {
 <body>
 <header class="chrome">
   <a class="brand" href="https://triple3labs.io" target="_blank" rel="noopener">${LOGO_SVG}<span>Triple 3 <span class="grad">Labs</span></span></a>
-  <a class="portfolio-link" href="https://triple3labs.io/work" target="_blank" rel="noopener">Our AI Agents &amp; Automations &rarr;</a>
+  <a class="portfolio-link" href="https://triple3labs.io/work" target="_blank" rel="noopener">View Our AI Agents &amp; Automations &rarr;</a>
 </header>
 <main>
   <iframe id="report" src="/r/${slug}?raw=1" title="${title}"></iframe>
