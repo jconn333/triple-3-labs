@@ -26,11 +26,19 @@ export interface Deal {
   amount: number | null;
   description: string | null;
   closed_at: string | null;
+  prospect_report_id: string | null;
   created_at: string;
   updated_at: string;
   // Joined fields
   contact?: Contact;
   stage?: PipelineStage;
+  report_engagement?: ReportEngagement | null;
+}
+
+export interface ReportEngagement {
+  slug: string;
+  views: number;
+  last_viewed_at: string | null;
 }
 
 export interface PipelineStage {

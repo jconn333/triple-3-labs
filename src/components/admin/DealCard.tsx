@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
+import { Eye, EyeOff, Trash2 } from "lucide-react";
 import { formatCurrency, formatRelativeTime } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import type { Deal } from "@/lib/crm/types";
@@ -53,6 +53,32 @@ export default function DealCard({ deal, isDragOverlay, onDelete }: DealCardProp
         <p className="mt-1 text-xs font-semibold text-emerald-400">
           {formatCurrency(deal.amount)}
         </p>
+      )}
+
+      {deal.report_engagement && (
+        deal.report_engagement.views > 0 ? (
+          <a
+            href={`https://triple3labs.io/r/${deal.report_engagement.slug}`}
+            target="_blank"
+            rel="noopener"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-1.5 flex w-fit items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 hover:bg-emerald-500/20"
+          >
+            <Eye size={10} />
+            Report opened ×{deal.report_engagement.views}
+            {deal.report_engagement.last_viewed_at && (
+              <span className="text-emerald-400/60">
+                · {formatRelativeTime(deal.report_engagement.last_viewed_at)}
+              </span>
+            )}
+          </a>
+        ) : (
+          <span className="mt-1.5 flex w-fit items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-white/35">
+            <EyeOff size={10} />
+            Report not opened yet
+          </span>
+        )
       )}
 
       <div className="mt-2 flex items-center justify-between">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { attachReportEngagement } from "@/lib/crm/report-engagement";
 
 export async function GET(
   request: NextRequest,
@@ -43,7 +44,12 @@ export async function GET(
     .eq("contact_id", id)
     .maybeSingle();
 
-  return NextResponse.json({ contact, deals: deals || [], activities: activities || [], account });
+  return NextResponse.json({
+    contact,
+    deals: await attachReportEngagement(deals || []),
+    activities: activities || [],
+    account,
+  });
 }
 
 export async function PATCH(
