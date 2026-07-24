@@ -40,3 +40,18 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 supabase/.temp/
+
+# local tooling / scratch
+.playwright-mcp/
+output/
+.git-broken/
+blog-listing.png
+post-ai-models.png
+post-cowork.png
+post-openclaw.png
+post-openclaw-fixed.png
+post-voice-agents.png
+post-voice-agents-fixed.png
+pricing-page-check.png
+regy-checkout-1.png
+regy-checkout-full.png

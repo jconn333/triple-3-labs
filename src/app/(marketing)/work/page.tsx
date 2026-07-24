@@ -44,30 +44,10 @@ export default function WorkPage() {
             Real systems. <span className="gradient-text">Running in real businesses.</span>
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-white/50">
-            Real systems, live in production or actively in development —
-            most of the finished ones built for our own companies first. We
-            build for ourselves before we build for you, so we know exactly
-            what breaks and what doesn&apos;t.
+            Each one solves a real problem every day — taking work off
+            someone&apos;s plate and handing that time back, so the people
+            running these businesses can spend it on what actually matters.
           </p>
-
-          <div className="mx-auto mt-10 grid max-w-2xl grid-cols-2 gap-6 sm:grid-cols-4">
-            {[
-              { value: "12+", label: "Systems in production" },
-              { value: "2", label: "Voice agents on the phones 24/7" },
-              { value: "75", label: "Properties priced nightly" },
-              { value: "6", label: "Companies running these systems" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p
-                  className="text-3xl font-bold gradient-text"
-                  style={{ fontFamily: "var(--font-space-grotesk)" }}
-                >
-                  {stat.value}
-                </p>
-                <p className="mt-1 text-xs text-white/40">{stat.label}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
