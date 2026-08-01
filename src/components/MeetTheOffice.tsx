@@ -21,6 +21,7 @@ import {
   Video,
   MousePointerClick,
   Ruler,
+  Target,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -92,6 +93,25 @@ const agents: Agent[] = [
     icon: Search,
     gradient: "from-cyan to-blue-500",
     accentColor: "cyan",
+    status: "available",
+  },
+  {
+    name: "The PPC Specialist",
+    title: "Campaign Build & Daily Optimization",
+    description:
+      "Builds your Google Ads account end to end — every campaign, ad group, keyword, match type, negative list, and asset filled out and priced to your market. Then works it every day: reviews search terms, cuts the waste, scales the winners, and verifies revenue against your own booking or order system instead of taking the ad platform's word for it.",
+    skills: [
+      "Full campaign build",
+      "Keyword & match-type strategy",
+      "Negative keyword pruning",
+      "Bid & budget optimization",
+      "Conversion tracking setup",
+      "ROAS verification",
+    ],
+    tools: ["Google Ads", "Google Analytics", "Google Tag Manager", "Microsoft Ads"],
+    icon: Target,
+    gradient: "from-lime-400 to-teal-600",
+    accentColor: "lime",
     status: "available",
   },
   {

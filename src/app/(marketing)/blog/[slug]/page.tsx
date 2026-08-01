@@ -12,16 +12,28 @@ export const revalidate = 60;
 // Allow slugs not present at build time to be rendered on first request
 export const dynamicParams = true;
 
+// Filename portion of an image URL, used to tell whether a post's featured
+// image is already embedded in its body.
+function basename(url: string): string {
+  return url.split("/").pop() ?? url;
+}
+
 // Lazy-load in-body images so a long post doesn't download every screenshot up
 // front. The first image stays eager to protect the largest-contentful-paint.
+//
+// Each image is also wrapped in a link to its full-size source. Screenshots run
+// ~1400px wide and get squeezed into a ~327px column on a phone, which makes any
+// text inside them unreadable — tapping opens the original so it can be zoomed.
+// Paired with the full-bleed mobile rule in blog-prose.css.
 function withLazyImages(html: string): string {
   let first = true;
-  return html.replace(/<img\b/gi, () => {
-    if (first) {
-      first = false;
-      return '<img decoding="async"';
-    }
-    return '<img loading="lazy" decoding="async"';
+  return html.replace(/<img\b([^>]*?)\/?>/gi, (_tag, attrs: string) => {
+    const loading = first ? "" : ' loading="lazy"';
+    first = false;
+    const img = `<img${attrs} decoding="async"${loading} />`;
+    const src = /\bsrc="([^"]+)"/i.exec(attrs)?.[1];
+    if (!src) return img;
+    return `<a class="blog-img-zoom" href="${src}" target="_blank" rel="noopener noreferrer">${img}</a>`;
   });
 }
 
@@ -118,6 +130,23 @@ export default async function BlogPostPage({
               </div>
             )}
           </header>
+
+          {/* Hero. Eager and high priority — it's the largest-contentful-paint
+              element on the page whenever a post has one.
+
+              Many of the build-story posts already open with their featured
+              image inside the body, where the author placed it deliberately.
+              Rendering a hero there would show the same picture twice, so the
+              hero is skipped whenever the image already appears in the post. */}
+          {post.image && !post.content.includes(basename(post.image)) && (
+            <img
+              src={post.image}
+              alt=""
+              fetchPriority="high"
+              decoding="async"
+              className="mb-12 w-full rounded-2xl border border-white/5 object-cover"
+            />
+          )}
 
           <div
             className="blog-prose"

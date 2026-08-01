@@ -1,0 +1,96 @@
+<!--
+slug:        we-fact-checked-local-seo-advice
+title:       We Fact-Checked the Local SEO Advice Everyone Repeats. Five Things Were Just Wrong.
+description: Building an SEO agent forces you to write down what you actually believe. When we ran an adversarial fact-check over the standard local SEO canon, five widely-repeated claims didn't survive — including one that appears to have been invented outright.
+author:      Triple 3 Labs
+tags:        SEO, AI Agents, Local SEO, Research
+status:      draft
+-->
+
+<p>If you want to find out how much of what you "know" is actually true, try teaching it to a machine.</p>
+
+<p>We spent this summer building an SEO agent — a standing capability that audits sites on a schedule, tracks rankings, watches Search Console and Analytics for anomalies, and turns all of it into a readout somebody actually reads. The interesting part wasn't the automation. It was the knowledge base underneath it.</p>
+
+<p>Because an agent can't shrug. A human consultant hedges with tone of voice — a slight pause, an "in my experience" — and everyone in the room calibrates accordingly. An agent just says the thing. Whatever you write down, it will repeat with total confidence to a paying customer at 2 AM. <strong>A confident wrong answer is worse than no answer</strong>, and the only way to avoid shipping one is to go find out which of your beliefs are load-bearing and which are folklore.</p>
+
+<p>So before writing a single rule, we ran the whole local SEO canon through an adversarial fact-check. Five things everybody repeats did not survive it.</p>
+
+<h2>How we checked</h2>
+
+<p>Eight topics — pack rankings, Google Business Profile, reviews, AI visibility, local content, links and citations, technical, paid — swept in parallel by dozens of independent research agents. Three angles per topic: what practitioners report, what changed most recently, and what the official documentation actually says.</p>
+
+<p>Then the important part, which most research skips: the findings went to a separate <strong>adversarial verification</strong> layer whose only job was to try to break each claim — find the primary source, check the date, check whether the number has been laundered through six blog posts since anyone measured it. Claims that survived got merged, distilled, and finally handed to a completeness critic asking what was missing.</p>
+
+<p>Sources were weighted deliberately: Sterling Sky, Whitespark, Near Media, BrightLocal, LocalU, Search Engine Land, and Google's own documentation. Content-mill listicles were excluded entirely — which turned out to matter enormously, because that's where most of the bad numbers live.</p>
+
+<h2>The five that failed</h2>
+
+<h3>1. The "18-day review cliff"</h3>
+
+<p>You'll see this stated as law: let more than 18 days pass without a new review and your rankings decay. It's cited constantly, usually with no source.</p>
+
+<p>It traces back to <strong>a single case study on one business</strong>. That's it. Steady review cadence genuinely does beat bursty acquisition — that part holds up well. But "18 days" is one company's anecdote wearing a lab coat, and no agent of ours will ever present it as a threshold.</p>
+
+<h3>2. The Yelp/Reddit AI citation split</h3>
+
+<p>This one is the reason we built the verification layer.</p>
+
+<p>There's a widely-circulated statistic that local citations in AI answers break down to roughly <strong>32% Yelp and 30% Reddit</strong>. Clean, quotable, appears in decks. We went looking for the study behind it.</p>
+
+<p>There isn't one. As far as we could trace, the number was <strong>fabricated</strong> — and then repeated until it acquired the texture of a fact.</p>
+
+<p>The real figure is not remotely close, and it's far more actionable: <strong>Yelp accounts for about 72.5%</strong> of local citations in Google's AI Mode. Not a third. Nearly three quarters. If you'd built a strategy around the fake number, you'd have spent a year on Reddit while ignoring the single biggest lever into AI answers.</p>
+
+<h3>3. The Local Services Ads cost benchmark</h3>
+
+<p>A cost-per-lead figure of about $53 gets quoted everywhere for LSA in the home-service trades. It was accurate. It's now stale — the current figure is <strong>$62.56</strong> as of mid-2026.</p>
+
+<p>Eighteen percent off isn't a scandal, but it's the difference between a budget recommendation that works and one that quietly runs dry in month two. Stale numbers don't announce themselves; they just sit there looking authoritative.</p>
+
+<h3>4. llms.txt</h3>
+
+<p>The pitch: drop an <code>llms.txt</code> file at your domain root to tell AI crawlers how to read your site, and earn better AI visibility. It spread fast, because it feels like <code>robots.txt</code> and therefore feels like infrastructure.</p>
+
+<p>Google has <strong>officially confirmed it has zero effect</strong> on ranking or AI systems. It is, at present, a file you can add for free that does nothing at all. Harmless — unless someone bills you for an "AI readiness" engagement whose deliverable is that file.</p>
+
+<h3>5. Photo geotagging</h3>
+
+<p>Embedding GPS coordinates into image metadata before uploading to your Google Business Profile, as a local ranking hack. A myth, and an old one. Google strips the data. It has never worked.</p>
+
+<h2>What we did instead of picking a side</h2>
+
+<p>The lesson from all five isn't "check your sources." It's that <strong>certainty is a spectrum, and most SEO advice flattens it to a binary.</strong></p>
+
+<p>So every rule in the knowledge base carries a confidence tag — <code>[high]</code>, <code>[medium]</code>, <code>[low]</code> — with a dated source, and the agent is instructed to <em>pass that confidence through to the client honestly</em>. "This is well-tested" and "early evidence suggests" are different sentences, and a client deserves to know which one they're getting.</p>
+
+<p>A concrete example. The widely-cited breakdown of local ranking factors — proximity around 55%, Google Business Profile signals around 32% — comes from a gated industry report most people are quoting secondhand. Our position: the <strong>ordering</strong> of those factors is <code>[high]</code> confidence and you can plan around it. Any <strong>exact percentage</strong> is <code>[medium]</code>, and must be attributed as a secondary recap rather than stated as fact. Same underlying research, two very different levels of certainty, and the difference matters the moment a client makes a budget decision on it.</p>
+
+<p>Every rule also names the data source that checks it — Ahrefs, Search Console, Analytics, the Google listing itself, a geo-grid scan, or manual inspection. If a recommendation can't be tied to something measurable, it doesn't belong in the file.</p>
+
+<p>And the five refuted claims above didn't get deleted. They live in <strong>anti-pattern sections</strong>, precisely so the agent recognizes them — and corrects the client who arrives having read them somewhere else.</p>
+
+<h2>The rules that make it refuse</h2>
+
+<p>Two more things went into the knowledge base that have nothing to do with rankings.</p>
+
+<p>The first is <strong>suspension avoidance</strong>. 2026 brought confirmed waves of Google Business Profile suspensions in the high-spam trades — contractors, locksmiths, movers — with AI-driven detection behind them. For a local business whose leads run through that profile, a suspension is catastrophic and sometimes unrecoverable. The agent will not recommend anything that risks one, no matter how much short-term lift it might buy. Review manipulation in particular is both a suspension trigger and an FTC violation, and the fines land on the business <em>and</em> the vendor who suggested it. "Ask everyone, honestly" is the only compliant way to build review velocity, so it's the only one in the file.</p>
+
+<p>The second is <strong>permission to say no</strong>. Local SEO is a compounding three-to-six month play, not a switch. If a market is tiny, or so ad-saturated that organic has no ceiling worth chasing, the correct recommendation is sometimes "don't spend this money." An agent that can only ever recommend more work isn't an advisor, it's a billing mechanism.</p>
+
+<p>Related: results get proved monthly in visibility, share of voice, and lead volume — never raw organic clicks. About <strong>68% of searches now end without a click</strong>, so a report built on clicks is measuring the wrong thing on purpose.</p>
+
+<h2>It goes stale, so it gets swept</h2>
+
+<p>Search changes fast enough that a knowledge base written once is a liability within a year. Every claim carries a publish date, so staleness is auditable rather than invisible. A monthly recency sweep re-checks the practitioner sources for algorithm updates, policy changes, and AI-search shifts, and patches the file — every change logged with a date.</p>
+
+<p>That monthly sweep turns out to be a deliverable in its own right. "Here's what changed in search this month, and here's the one thing it changes for you" is more useful to most owners than any dashboard.</p>
+
+<h2>The point</h2>
+
+<p>We didn't set out to write a fact-check. We set out to build an agent, and discovered that the hard part wasn't the code — it was that a machine forces you to commit, in writing, to what you actually believe and how sure you are.</p>
+
+<p>Which surfaces the thing worth taking away from all of this:</p>
+
+<blockquote>Mediocre SEO advice is confident and generic. Good advice is calibrated and cited.</blockquote>
+
+<p>The next time someone hands you a number, ask them where it came from and when it was measured. We asked, five times, and got nothing back.</p>

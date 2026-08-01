@@ -67,6 +67,32 @@
   @apply my-8 rounded-xl border border-white/5;
 }
 
+/* Images are wrapped in a tap-to-open link (see the blog post page). Strip the
+   normal link styling and hint that the image can be enlarged. */
+.blog-prose a.blog-img-zoom {
+  @apply block no-underline;
+  border: 0;
+}
+
+.blog-prose a.blog-img-zoom img {
+  cursor: zoom-in;
+}
+
+/* On phones the prose column is ~327px wide, which shrinks a 1400px screenshot
+   past the point of legibility. Let images use the full viewport instead, and
+   drop the rounding/border that only make sense inside the column. */
+@media (max-width: 640px) {
+  .blog-prose a.blog-img-zoom {
+    width: 100vw;
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .blog-prose a.blog-img-zoom img {
+    @apply my-8 w-full rounded-none border-x-0;
+  }
+}
+
 .blog-prose table {
   @apply mb-6 w-full text-sm text-white/70;
 }
