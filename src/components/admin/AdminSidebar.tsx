@@ -13,11 +13,13 @@ import {
   CreditCard,
   FileText,
   Ticket,
+  Radar,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { label: "Mission Control", href: "/admin/mission-control", icon: Radar },
   { label: "Pipeline", href: "/admin/pipeline", icon: Kanban },
   { label: "Contacts", href: "/admin/contacts", icon: Users },
   { label: "Accounts", href: "/admin/accounts", icon: Building2 },
