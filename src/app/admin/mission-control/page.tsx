@@ -1,117 +1,219 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, Radar, CircleCheck, CircleAlert, CircleDashed } from "lucide-react";
+import {
+  RefreshCw,
+  Radar,
+  CircleCheck,
+  CircleAlert,
+  ChevronRight,
+  PauseCircle,
+} from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils/format";
 
-interface Canary {
-  canary_id: string;
-  status: string | null;
-  last_check_at: string | null;
-  error: string | null;
-}
+type ProcessState = "ok" | "degraded" | "down" | "paused";
 
-interface AgentRow {
-  agent_id: string;
-  customer_id: string;
-  host: string | null;
-  last_heartbeat: string | null;
-  stale_threshold_seconds: number | null;
-  last_task_name: string | null;
-  last_task_status: string | null;
-  last_task_at: string | null;
-  canaries: Canary[];
-}
-
-interface OrphanCanary extends Canary {
-  agent_id: string;
+interface ProcessRow {
+  key: string;
+  label: string;
+  kind: string;
+  state: ProcessState;
+  detail: string | null;
+  counted: boolean;
 }
 
 interface CommitmentRow {
   id: string;
-  customer_id: string;
-  agent_id: string;
   name: string;
   kind: string;
-  next_due: string | null;
   status: string;
+  next_due: string | null;
   last_delivered: string | null;
-  last_output: string | null;
   notes: string | null;
 }
 
-interface MissionData {
-  agents: AgentRow[];
-  orphanCanaries: OrphanCanary[];
+interface AgentNode {
+  agent_key: string;
+  display_name: string;
+  processes: ProcessRow[];
+  healthy: number;
+  total: number;
+  state: ProcessState;
   commitments: CommitmentRow[];
+  attention: boolean;
+}
+
+interface CompanyNode {
+  company_id: string;
+  company_name: string;
+  agents: AgentNode[];
+  state: ProcessState;
+  attention: boolean;
+  next_due: string | null;
+}
+
+interface MissionData {
+  companies: CompanyNode[];
+  rollup: {
+    agents_ok: number;
+    agents_degraded: number;
+    agents_down: number;
+    overdue: number;
+    due_soon: number;
+  };
   fetchedAt: string;
 }
 
-const AGENT_LABELS: Record<string, string> = {
-  "ecoseal.seo": "Dwight — Eco Seal SEO",
-  "fivestar.zeke": "Zeke — Five Star",
-  "zeke.daily_brief": "Zeke daily brief",
-  "sync.hostaway": "HostAway sync",
-  "sync.cloudbeds": "Cloudbeds sync",
-  "triple3.ticket-triage": "Ticket triage",
-};
-
-// Wrapper heartbeats fire every 60s for persistent agents; scheduled agents
-// carry their own threshold in agent_health. Default mirrors the dead-man
-// switch's 300s customer default.
-function heartbeatState(agent: AgentRow): "ok" | "stale" | "unknown" {
-  if (!agent.last_heartbeat) return "unknown";
-  const ageS = (Date.now() - new Date(agent.last_heartbeat).getTime()) / 1000;
-  return ageS > (agent.stale_threshold_seconds ?? 300) ? "stale" : "ok";
-}
-
-function agentAttention(agent: AgentRow): boolean {
-  return (
-    heartbeatState(agent) === "stale" ||
-    agent.canaries.some((c) => c.status === "error") ||
-    agent.last_task_status === "error"
-  );
-}
-
-function commitmentAttention(c: CommitmentRow): boolean {
-  return c.status === "OVERDUE" || c.status === "DUE_SOON";
-}
-
-function StatusDot({ state }: { state: "ok" | "stale" | "unknown" }) {
+function StateDot({ state }: { state: ProcessState }) {
   const cls =
     state === "ok"
       ? "bg-emerald-400"
-      : state === "stale"
+      : state === "down"
         ? "bg-red-400 animate-pulse"
-        : "bg-white/30";
+        : state === "degraded"
+          ? "bg-amber-400"
+          : "bg-white/25";
   return <span className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${cls}`} />;
 }
 
-function CommitmentBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    OVERDUE: "border-red-400/40 bg-red-400/15 text-red-300",
-    DUE_SOON: "border-amber-400/40 bg-amber-400/15 text-amber-300",
-    on_track: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
-    delivered: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
-    see_canaries: "border-white/15 bg-white/5 text-white/50",
-    unscheduled: "border-white/15 bg-white/5 text-white/50",
-    inactive: "border-white/15 bg-white/5 text-white/40",
+function CommitmentChip({ c }: { c: CommitmentRow }) {
+  const map: Record<string, { cls: string; label: string }> = {
+    OVERDUE: { cls: "border-red-400/40 bg-red-400/15 text-red-300", label: "Overdue" },
+    DUE_SOON: { cls: "border-amber-400/40 bg-amber-400/15 text-amber-300", label: "Due soon" },
+    on_track: { cls: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300", label: "On track" },
+    delivered: { cls: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300", label: "Delivered" },
+    see_canaries: { cls: "border-white/15 bg-white/5 text-white/50", label: "Continuous" },
+    unscheduled: { cls: "border-white/15 bg-white/5 text-white/50", label: "Unscheduled" },
   };
-  const labels: Record<string, string> = {
-    OVERDUE: "Overdue",
-    DUE_SOON: "Due soon",
-    on_track: "On track",
-    delivered: "Delivered",
-    see_canaries: "Continuous",
-    unscheduled: "Unscheduled",
-    inactive: "Inactive",
-  };
+  const s = map[c.status] ?? map.unscheduled;
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.unscheduled}`}
+      className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${s.cls}`}
     >
-      {labels[status] ?? status}
+      {s.label}
     </span>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: number; tone?: "bad" | "warn" }) {
+  return (
+    <div className="flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3">
+      <p
+        className={`text-2xl font-semibold tabular-nums ${
+          value > 0 && tone === "bad"
+            ? "text-red-300"
+            : value > 0 && tone === "warn"
+              ? "text-amber-300"
+              : "text-white"
+        }`}
+      >
+        {value}
+      </p>
+      <p className="text-xs text-white/40">{label}</p>
+    </div>
+  );
+}
+
+function AgentRow({ agent }: { agent: AgentNode }) {
+  // Broken rows open themselves; the user should never click to discover a problem.
+  const [open, setOpen] = useState(agent.attention);
+  useEffect(() => {
+    if (agent.attention) setOpen(true);
+  }, [agent.attention]);
+
+  const dueChip = agent.commitments.find(
+    (c) => c.status === "OVERDUE" || c.status === "DUE_SOON"
+  );
+  const nextRecurring = agent.commitments.find((c) => c.kind === "recurring");
+
+  return (
+    <div className={agent.attention ? "bg-red-400/5" : ""}>
+      <button
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3.5 text-left hover:bg-white/[0.04]"
+      >
+        <ChevronRight
+          size={14}
+          className={`shrink-0 text-white/30 transition-transform ${open ? "rotate-90" : ""}`}
+        />
+        <StateDot state={agent.state} />
+        <span className="min-w-44 text-sm font-medium text-white">{agent.display_name}</span>
+        <span
+          className={`text-sm tabular-nums ${
+            agent.healthy === agent.total ? "text-emerald-300" : "text-amber-300"
+          }`}
+        >
+          {agent.healthy}/{agent.total} processes healthy
+        </span>
+        <span className="flex-1" />
+        {dueChip ? (
+          <CommitmentChip c={dueChip} />
+        ) : nextRecurring?.next_due ? (
+          <span className="text-xs text-white/40">
+            Next: {nextRecurring.name.toLowerCase().includes("report") ? "report" : nextRecurring.name}{" "}
+            {nextRecurring.next_due}
+          </span>
+        ) : null}
+      </button>
+
+      {open && (
+        <div className="border-t border-white/5 px-12 pb-4 pt-2">
+          <div className="flex flex-col gap-1.5">
+            {agent.processes.map((p) => (
+              <div key={p.key} className="flex items-baseline gap-3 text-sm">
+                {p.state === "paused" ? (
+                  <PauseCircle size={12} className="relative top-0.5 shrink-0 text-white/25" />
+                ) : (
+                  <StateDot state={p.state} />
+                )}
+                <span className={p.state === "paused" ? "text-white/40" : "text-white/80"}>
+                  {p.label}
+                </span>
+                <span
+                  className={`text-xs ${
+                    p.state === "down"
+                      ? "text-red-300"
+                      : p.state === "degraded"
+                        ? "text-amber-300"
+                        : "text-white/40"
+                  }`}
+                >
+                  {p.detail}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {agent.commitments.length > 0 && (
+            <div className="mt-3 border-t border-white/5 pt-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/30">
+                Commitments
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {agent.commitments.map((c) => (
+                  <div key={c.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm">
+                    <span className="text-white/80">{c.name}</span>
+                    <CommitmentChip c={c} />
+                    {c.next_due && (
+                      <span className="text-xs text-white/40">due {c.next_due}</span>
+                    )}
+                    {c.last_delivered && (
+                      <span className="text-xs text-white/40">
+                        delivered {formatRelativeTime(c.last_delivered)}
+                      </span>
+                    )}
+                    {c.notes?.startsWith("BLOCKED") && (
+                      <span className="text-xs text-amber-300/80">blocked on customer</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -142,9 +244,7 @@ export default function MissionControlPage() {
     return () => clearInterval(t);
   }, [fetchData]);
 
-  if (loading) {
-    return <div className="py-20 text-center text-white/40">Loading fleet…</div>;
-  }
+  if (loading) return <div className="py-20 text-center text-white/40">Loading fleet…</div>;
   if (error) {
     return (
       <div className="mx-auto max-w-lg rounded-lg border border-red-400/30 bg-red-400/10 p-6 text-center">
@@ -164,13 +264,11 @@ export default function MissionControlPage() {
   }
   if (!data) return null;
 
-  const attentionAgents = data.agents.filter(agentAttention);
-  const attentionCommitments = data.commitments.filter(commitmentAttention);
-  const failingOrphans = data.orphanCanaries.filter((c) => c.status === "error");
   const allClear =
-    attentionAgents.length === 0 &&
-    attentionCommitments.length === 0 &&
-    failingOrphans.length === 0;
+    data.rollup.agents_degraded === 0 &&
+    data.rollup.agents_down === 0 &&
+    data.rollup.overdue === 0 &&
+    data.rollup.due_soon === 0;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -193,193 +291,65 @@ export default function MissionControlPage() {
         </button>
       </div>
 
-      {/* Attention banner */}
+      {/* Rollup strip — the two-second read */}
+      <div className="mb-6 flex flex-wrap gap-3">
+        <Stat label="Agents healthy" value={data.rollup.agents_ok} />
+        <Stat label="Degraded" value={data.rollup.agents_degraded} tone="warn" />
+        <Stat label="Down" value={data.rollup.agents_down} tone="bad" />
+        <Stat label="Deliverables overdue" value={data.rollup.overdue} tone="bad" />
+        <Stat label="Due this week" value={data.rollup.due_soon} tone="warn" />
+      </div>
+
       <div
-        className={`mb-8 flex items-center gap-3 rounded-lg border p-4 ${
+        className={`mb-8 flex items-center gap-3 rounded-lg border p-3.5 ${
           allClear
             ? "border-emerald-400/30 bg-emerald-400/10"
             : "border-amber-400/40 bg-amber-400/10"
         }`}
       >
         {allClear ? (
-          <CircleCheck size={18} className="shrink-0 text-emerald-300" />
+          <CircleCheck size={16} className="shrink-0 text-emerald-300" />
         ) : (
-          <CircleAlert size={18} className="shrink-0 text-amber-300" />
+          <CircleAlert size={16} className="shrink-0 text-amber-300" />
         )}
         <p className="text-sm text-white/80">
           {allClear
             ? "All agents healthy, all commitments on schedule."
-            : [
-                attentionAgents.length > 0 &&
-                  `${attentionAgents.length} agent${attentionAgents.length > 1 ? "s" : ""} need attention`,
-                attentionCommitments.length > 0 &&
-                  `${attentionCommitments.length} deliverable${attentionCommitments.length > 1 ? "s" : ""} due/overdue`,
-                failingOrphans.length > 0 &&
-                  `${failingOrphans.length} infra probe${failingOrphans.length > 1 ? "s" : ""} failing`,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+            : "Items needing attention are expanded below."}
         </p>
       </div>
 
-      {/* Fleet */}
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">
-        Fleet
-      </h2>
-      <div className="mb-8 overflow-hidden rounded-lg border border-white/10">
-        {data.agents.map((agent, i) => {
-          const hb = heartbeatState(agent);
-          const failing = agent.canaries.filter((c) => c.status === "error");
-          return (
+      {/* Companies */}
+      <div className="flex flex-col gap-5">
+        {data.companies.map((co) => (
+          <div key={co.company_id} className="overflow-hidden rounded-lg border border-white/10">
             <div
-              key={agent.agent_id}
-              className={`flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4 ${
-                i > 0 ? "border-t border-white/10" : ""
-              } ${agentAttention(agent) ? "bg-red-400/5" : "bg-white/[0.02]"}`}
+              className={`flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-white/10 px-5 py-3 ${
+                co.attention ? "bg-red-400/10" : "bg-white/[0.04]"
+              }`}
             >
-              <div className="flex min-w-52 items-center gap-3">
-                <StatusDot state={hb} />
-                <div>
-                  <p className="text-sm font-medium text-white">
-                    {AGENT_LABELS[agent.agent_id] ?? agent.agent_id}
-                  </p>
-                  <p className="text-xs text-white/40">
-                    {agent.customer_id} · {agent.host ?? "unknown host"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="min-w-40">
-                <p className="text-xs text-white/40">Heartbeat</p>
-                <p className={`text-sm ${hb === "stale" ? "text-red-300" : "text-white/80"}`}>
-                  {agent.last_heartbeat ? formatRelativeTime(agent.last_heartbeat) : "never"}
-                </p>
-              </div>
-
-              <div className="min-w-44">
-                <p className="text-xs text-white/40">Last task</p>
-                <p className="text-sm text-white/80">
-                  {agent.last_task_name ? (
-                    <>
-                      {agent.last_task_name}
-                      <span
-                        className={
-                          agent.last_task_status === "ok"
-                            ? "text-emerald-300"
-                            : "text-red-300"
-                        }
-                      >
-                        {" "}
-                        {agent.last_task_status}
-                      </span>{" "}
-                      <span className="text-white/40">
-                        {agent.last_task_at ? formatRelativeTime(agent.last_task_at) : ""}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-white/40">— session agent</span>
-                  )}
-                </p>
-              </div>
-
-              <div className="flex-1">
-                <p className="text-xs text-white/40">Canaries</p>
-                {agent.canaries.length === 0 ? (
-                  <p className="text-sm text-white/40">none</p>
-                ) : failing.length === 0 ? (
-                  <p className="text-sm text-emerald-300">
-                    {agent.canaries.length}/{agent.canaries.length} passing
-                  </p>
-                ) : (
-                  <p className="text-sm text-red-300" title={failing.map((c) => c.canary_id).join(", ")}>
-                    {failing.length} failing: {failing.map((c) => c.canary_id).join(", ")}
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Infra probes not tied to a fleet agent */}
-      {data.orphanCanaries.length > 0 && (
-        <>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">
-            Infra probes
-          </h2>
-          <div className="mb-8 flex flex-wrap gap-2">
-            {data.orphanCanaries.map((c) => (
-              <span
-                key={c.canary_id}
-                title={c.error ?? undefined}
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${
-                  c.status === "ok"
-                    ? "border-white/10 bg-white/5 text-white/60"
-                    : c.status === "error"
-                      ? "border-red-400/40 bg-red-400/10 text-red-300"
-                      : "border-white/10 bg-white/5 text-white/40"
-                }`}
-              >
-                {c.status === "ok" ? (
-                  <CircleCheck size={12} className="text-emerald-300" />
-                ) : c.status === "error" ? (
-                  <CircleAlert size={12} />
-                ) : (
-                  <CircleDashed size={12} />
-                )}
-                {c.canary_id}
-                <span className="text-white/30">
-                  {c.last_check_at ? formatRelativeTime(c.last_check_at) : "no data"}
-                </span>
+              <StateDot state={co.state} />
+              <h2 className="text-sm font-semibold text-white">{co.company_name}</h2>
+              <span className="text-xs text-white/40">
+                {co.agents.length} agent{co.agents.length > 1 ? "s" : ""}
               </span>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* Commitments */}
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">
-        Customer commitments
-      </h2>
-      <div className="overflow-hidden rounded-lg border border-white/10">
-        {data.commitments.length === 0 ? (
-          <p className="px-5 py-6 text-sm text-white/40">No active commitments.</p>
-        ) : (
-          data.commitments.map((c, i) => (
-            <div
-              key={c.id}
-              className={`flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3.5 ${
-                i > 0 ? "border-t border-white/10" : ""
-              } ${commitmentAttention(c) ? "bg-amber-400/5" : "bg-white/[0.02]"}`}
-            >
-              <div className="min-w-64 flex-1">
-                <p className="text-sm font-medium text-white">{c.name}</p>
-                <p className="text-xs text-white/40">
-                  {c.customer_id} · {AGENT_LABELS[c.agent_id] ?? c.agent_id}
-                </p>
-              </div>
-              <div className="min-w-32">
-                <p className="text-xs text-white/40">Next due</p>
-                <p className="text-sm text-white/80">{c.next_due ?? "—"}</p>
-              </div>
-              <div className="min-w-36">
-                <p className="text-xs text-white/40">Last delivered</p>
-                <p className="text-sm text-white/80">
-                  {c.last_delivered ? formatRelativeTime(c.last_delivered) : "—"}
-                </p>
-              </div>
-              <CommitmentBadge status={c.status} />
+              <span className="flex-1" />
+              <span className="text-xs text-white/40">
+                {co.attention
+                  ? "needs attention"
+                  : co.next_due
+                    ? `next deliverable ${co.next_due}`
+                    : "all healthy"}
+              </span>
             </div>
-          ))
-        )}
+            <div className="divide-y divide-white/5">
+              {co.agents.map((a) => (
+                <AgentRow key={a.agent_key} agent={a} />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
-
-      {data.commitments.some((c) => c.notes?.startsWith("BLOCKED")) && (
-        <p className="mt-3 text-xs text-white/40">
-          Note: GSC + GA4 monitoring is waiting on the customer granting service-account
-          access.
-        </p>
-      )}
     </div>
   );
 }

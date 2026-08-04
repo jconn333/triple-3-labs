@@ -4,29 +4,70 @@ import { createOpsClient } from "@/lib/supabase/ops";
 
 export const dynamic = "force-dynamic";
 
-export interface AgentRow {
-  agent_id: string;
-  customer_id: string;
-  host: string | null;
-  last_heartbeat: string | null;
-  stale_threshold_seconds: number | null;
-  last_task_name: string | null;
-  last_task_status: string | null;
-  last_task_at: string | null;
-  canaries: { canary_id: string; status: string | null; last_check_at: string | null; error: string | null }[];
+// Hierarchy the dashboard renders: Company -> Agent -> Process.
+// Raw telemetry ids map to agents via the agent_registry table in the
+// ops project; anything unmapped surfaces in an "Unmapped" company so
+// new telemetry never silently disappears.
+
+export type ProcessState = "ok" | "degraded" | "down" | "paused";
+
+export interface ProcessRow {
+  key: string;
+  label: string;
+  kind: "heartbeat" | "canary" | "task";
+  state: ProcessState;
+  detail: string | null; // human-readable: age, error message
+  counted: boolean; // paused processes render but don't count in N/M
 }
 
 export interface CommitmentRow {
   id: string;
-  customer_id: string;
-  agent_id: string;
   name: string;
   kind: string;
-  next_due: string | null;
   status: string;
+  next_due: string | null;
   last_delivered: string | null;
-  last_output: string | null;
   notes: string | null;
+}
+
+export interface AgentNode {
+  agent_key: string;
+  display_name: string;
+  processes: ProcessRow[];
+  healthy: number;
+  total: number;
+  state: ProcessState; // worst counted process
+  commitments: CommitmentRow[];
+  attention: boolean;
+}
+
+export interface CompanyNode {
+  company_id: string;
+  company_name: string;
+  agents: AgentNode[];
+  state: ProcessState;
+  attention: boolean;
+  next_due: string | null;
+}
+
+function ageSeconds(ts: string): number {
+  return (Date.now() - new Date(ts).getTime()) / 1000;
+}
+
+function humanAge(ts: string): string {
+  const s = Math.max(0, Math.floor(ageSeconds(ts)));
+  if (s < 90) return `${s}s ago`;
+  if (s < 5400) return `${Math.round(s / 60)}m ago`;
+  if (s < 90000) return `${Math.round(s / 3600)}h ago`;
+  return `${Math.round(s / 86400)}d ago`;
+}
+
+const WORSE: Record<ProcessState, number> = { down: 3, degraded: 2, ok: 1, paused: 0 };
+function worst(states: ProcessState[]): ProcessState {
+  return states.reduce<ProcessState>(
+    (acc, s) => (WORSE[s] > WORSE[acc] ? s : acc),
+    "ok"
+  );
 }
 
 export async function GET() {
@@ -38,65 +79,193 @@ export async function GET() {
 
   const ops = createOpsClient();
 
-  const [healthRes, canaryRes, commitmentsRes] = await Promise.all([
-    ops.from("agent_health").select("*").order("agent_id"),
+  const since = new Date(Date.now() - 7 * 86400_000).toISOString();
+  const [registryRes, healthRes, canaryRes, tasksRes, commitmentsRes] = await Promise.all([
+    ops.from("agent_registry").select("*").order("sort_order"),
+    ops.from("agent_health").select("*"),
     ops
       .from("agent_canary_status")
-      .select("canary_id, agent_id, enabled, current_status, last_check_at, error_message"),
+      .select("canary_id, agent_id, enabled, description, current_status, last_check_at, error_message"),
+    // Latest task_end per agent for registry rows that health-check on task
+    // freshness (no heartbeat). RLS permits reading task_end events.
+    ops
+      .from("agent_events")
+      .select("agent_id, task_name, status, ts")
+      .eq("event_type", "task_end")
+      .gte("ts", since)
+      .order("ts", { ascending: false })
+      .limit(500),
     supabase
       .from("vw_commitment_status")
-      .select(
-        "id, customer_id, agent_id, name, kind, next_due, status, last_delivered, last_output, notes"
-      )
+      .select("id, customer_id, agent_id, name, kind, next_due, status, last_delivered, notes")
       .eq("active", true),
   ]);
 
-  if (healthRes.error) {
-    return NextResponse.json({ error: `ops health: ${healthRes.error.message}` }, { status: 500 });
-  }
-  if (commitmentsRes.error) {
-    return NextResponse.json(
-      { error: `commitments: ${commitmentsRes.error.message}` },
-      { status: 500 }
-    );
+  const firstError =
+    registryRes.error || healthRes.error || canaryRes.error || commitmentsRes.error;
+  if (firstError) {
+    return NextResponse.json({ error: firstError.message }, { status: 500 });
   }
 
-  const canaries = (canaryRes.data ?? []).filter((c) => c.enabled);
+  const registry = registryRes.data ?? [];
+  const health = healthRes.data ?? [];
+  const canaries = canaryRes.data ?? [];
+  const taskEvents = tasksRes.data ?? [];
+  const commitments = commitmentsRes.data ?? [];
 
-  const agents: AgentRow[] = (healthRes.data ?? []).map((h) => ({
-    agent_id: h.agent_id,
-    customer_id: h.customer_id,
-    host: h.host,
-    last_heartbeat: h.last_heartbeat,
-    stale_threshold_seconds: h.stale_threshold_seconds,
-    last_task_name: h.last_task_name,
-    last_task_status: h.last_task_status,
-    last_task_at: h.last_task_at,
-    canaries: canaries
-      .filter((c) => c.agent_id === h.agent_id)
-      .map((c) => ({
-        canary_id: c.canary_id,
-        status: c.current_status,
-        last_check_at: c.last_check_at,
-        error: c.error_message,
-      })),
-  }));
+  const mapped = new Set<string>(registry.flatMap((r) => r.telemetry_ids as string[]));
 
-  // Canaries whose subject agent has no agent_health row (infra probes).
-  const orphanCanaries = canaries
-    .filter((c) => !agents.some((a) => a.agent_id === c.agent_id))
-    .map((c) => ({
-      canary_id: c.canary_id,
-      agent_id: c.agent_id,
-      status: c.current_status,
-      last_check_at: c.last_check_at,
-      error: c.error_message,
-    }));
+  // Synthesize a registry row per unmapped telemetry id so nothing vanishes.
+  const unmappedIds = [
+    ...new Set([
+      ...health.map((h) => h.agent_id),
+      ...canaries.filter((c) => c.enabled).map((c) => c.agent_id),
+    ]),
+  ].filter((id) => !mapped.has(id));
 
+  const allRegistry = [
+    ...registry,
+    ...unmappedIds.map((id) => ({
+      agent_key: `unmapped:${id}`,
+      company_id: "unmapped",
+      company_name: "Unmapped telemetry",
+      display_name: id,
+      telemetry_ids: [id],
+      task_stale_seconds: null,
+      sort_order: 999,
+    })),
+  ];
+
+  const agents: (AgentNode & { company_id: string; company_name: string; sort: number })[] =
+    allRegistry.map((reg) => {
+      const ids: string[] = reg.telemetry_ids as string[];
+      const processes: ProcessRow[] = [];
+
+      // Heartbeat processes — one per telemetry id with an agent_health row.
+      for (const h of health.filter((h) => ids.includes(h.agent_id))) {
+        const threshold = h.stale_threshold_seconds ?? 300;
+        const stale = h.last_heartbeat ? ageSeconds(h.last_heartbeat) > threshold : true;
+        processes.push({
+          key: `hb:${h.agent_id}`,
+          label:
+            h.agent_id === reg.telemetry_ids[0]
+              ? "Heartbeat"
+              : `Heartbeat · ${h.agent_id}`,
+          kind: "heartbeat",
+          state: stale ? "down" : "ok",
+          detail: h.last_heartbeat ? humanAge(h.last_heartbeat) : "never reported",
+          counted: true,
+        });
+      }
+
+      // Canary processes.
+      for (const c of canaries.filter((c) => ids.includes(c.agent_id))) {
+        const paused = !c.enabled;
+        processes.push({
+          key: `canary:${c.canary_id}`,
+          label: c.canary_id.replace(/_/g, " "),
+          kind: "canary",
+          state: paused
+            ? "paused"
+            : c.current_status === "ok"
+              ? "ok"
+              : c.current_status === "error"
+                ? "down"
+                : "degraded",
+          detail: paused
+            ? "paused"
+            : c.current_status === "error"
+              ? (c.error_message ?? "failing")
+              : c.last_check_at
+                ? `checked ${humanAge(c.last_check_at)}`
+                : "no data yet",
+          counted: !paused,
+        });
+      }
+
+      // Task-freshness process for heartbeat-less agents (e.g. timer workers).
+      if (reg.task_stale_seconds) {
+        const latest = taskEvents.find((e) => ids.includes(e.agent_id));
+        const stale = latest ? ageSeconds(latest.ts) > reg.task_stale_seconds : true;
+        processes.push({
+          key: `task:${reg.agent_key}`,
+          label: latest ? `Last run · ${latest.task_name}` : "Last run",
+          kind: "task",
+          state: stale ? "down" : latest?.status === "ok" ? "ok" : "degraded",
+          detail: latest
+            ? `${latest.status} ${humanAge(latest.ts)}`
+            : "no runs in the last 7 days",
+          counted: true,
+        });
+      }
+
+      const counted = processes.filter((p) => p.counted);
+      const agentCommitments = commitments
+        .filter((c) => ids.includes(c.agent_id))
+        .map((c) => ({
+          id: c.id,
+          name: c.name,
+          kind: c.kind,
+          status: c.status,
+          next_due: c.next_due,
+          last_delivered: c.last_delivered,
+          notes: c.notes,
+        }));
+
+      const state = worst(counted.map((p) => p.state));
+      const attention =
+        state !== "ok" ||
+        agentCommitments.some((c) => c.status === "OVERDUE" || c.status === "DUE_SOON");
+
+      return {
+        agent_key: reg.agent_key,
+        display_name: reg.display_name,
+        company_id: reg.company_id,
+        company_name: reg.company_name,
+        sort: reg.sort_order,
+        processes,
+        healthy: counted.filter((p) => p.state === "ok").length,
+        total: counted.length,
+        state,
+        commitments: agentCommitments,
+        attention,
+      };
+    });
+
+  // Group into companies, worst-first within stable sort order.
+  const companies: CompanyNode[] = [];
+  for (const a of agents.sort((x, y) => x.sort - y.sort)) {
+    let co = companies.find((c) => c.company_id === a.company_id);
+    if (!co) {
+      co = {
+        company_id: a.company_id,
+        company_name: a.company_name,
+        agents: [],
+        state: "ok",
+        attention: false,
+        next_due: null,
+      };
+      companies.push(co);
+    }
+    const { company_id: _c, company_name: _n, sort: _s, ...node } = a;
+    co.agents.push(node);
+    co.state = worst([co.state, a.state]);
+    co.attention = co.attention || a.attention;
+    for (const c of a.commitments) {
+      if (c.next_due && (!co.next_due || c.next_due < co.next_due)) co.next_due = c.next_due;
+    }
+  }
+
+  const allAgents = companies.flatMap((c) => c.agents);
   return NextResponse.json({
-    agents,
-    orphanCanaries,
-    commitments: (commitmentsRes.data ?? []) as CommitmentRow[],
+    companies,
+    rollup: {
+      agents_ok: allAgents.filter((a) => a.state === "ok").length,
+      agents_degraded: allAgents.filter((a) => a.state === "degraded").length,
+      agents_down: allAgents.filter((a) => a.state === "down").length,
+      overdue: commitments.filter((c) => c.status === "OVERDUE").length,
+      due_soon: commitments.filter((c) => c.status === "DUE_SOON").length,
+    },
     fetchedAt: new Date().toISOString(),
   });
 }
