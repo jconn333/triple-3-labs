@@ -39,6 +39,7 @@ export interface AgentNode {
   state: ProcessState; // worst counted process
   commitments: CommitmentRow[];
   attention: boolean;
+  activity: number[]; // 24 hourly task-run counts, oldest → newest
 }
 
 export interface CompanyNode {
@@ -79,7 +80,9 @@ export async function GET() {
 
   const ops = createOpsClient();
 
-  const since = new Date(Date.now() - 7 * 86400_000).toISOString();
+  // 25h covers the activity trace and every task_stale_seconds threshold in
+  // the registry, and keeps the query under PostgREST's row cap.
+  const since = new Date(Date.now() - 25 * 3600_000).toISOString();
   const [registryRes, healthRes, canaryRes, tasksRes, commitmentsRes] = await Promise.all([
     ops.from("agent_registry").select("*").order("sort_order"),
     ops.from("agent_health").select("*"),
@@ -94,7 +97,7 @@ export async function GET() {
       .eq("event_type", "task_end")
       .gte("ts", since)
       .order("ts", { ascending: false })
-      .limit(500),
+      .limit(1000),
     supabase
       .from("vw_commitment_status")
       .select("id, customer_id, agent_id, name, kind, next_due, status, last_delivered, notes")
@@ -194,9 +197,17 @@ export async function GET() {
           state: stale ? "down" : latest?.status === "ok" ? "ok" : "degraded",
           detail: latest
             ? `${latest.status} ${humanAge(latest.ts)}`
-            : "no runs in the last 7 days",
+            : "no runs in the last 25 hours",
           counted: true,
         });
+      }
+
+      // Hourly run counts for the activity trace, oldest bucket first.
+      const activity = new Array<number>(24).fill(0);
+      for (const e of taskEvents) {
+        if (!ids.includes(e.agent_id)) continue;
+        const hoursAgo = Math.floor(ageSeconds(e.ts) / 3600);
+        if (hoursAgo >= 0 && hoursAgo < 24) activity[23 - hoursAgo] += 1;
       }
 
       const counted = processes.filter((p) => p.counted);
@@ -229,6 +240,7 @@ export async function GET() {
         state,
         commitments: agentCommitments,
         attention,
+        activity,
       };
     });
 
