@@ -1,10 +1,3 @@
--- Triple 3 Labs client onboarding — tokenized intake forms
--- Applied to cksdehpjxvkrvubmjjcl 2026-07-21. Continues the in-repo versioning
--- convention started by 20260719000000_ticketing_system_v1.sql.
--- Mirrors the signature_requests token pattern: the raw token exists only in
--- the emailed link, we store a SHA-256 of it (see src/lib/esign/tokens.ts),
--- and the public route reads via the service-role client.
-
 create table public.onboarding_requests (
   id uuid primary key default gen_random_uuid(),
   account_id uuid not null references public.accounts(id) on delete cascade,
@@ -33,7 +26,5 @@ create index onboarding_requests_account_idx on public.onboarding_requests (acco
 create index onboarding_requests_token_hash_idx on public.onboarding_requests (token_hash);
 create trigger onboarding_requests_updated_at before update on public.onboarding_requests for each row execute function set_updated_at();
 
--- RLS: staff (authenticated) full access; the public /onboarding/[token] route
--- uses the service-role client, same as /sign/[token] — no anon policy needed.
 alter table public.onboarding_requests enable row level security;
-create policy "authenticated_manage_onboarding" on public.onboarding_requests for all to authenticated using (true) with check (true);
+create policy "authenticated_manage_onboarding" on public.onboarding_requests for all to authenticated using (true) with check (true);;

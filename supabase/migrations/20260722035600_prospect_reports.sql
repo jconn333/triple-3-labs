@@ -26,4 +26,4 @@ create index if not exists report_views_report_id_idx
 -- RLS on with no policies: only the service-role key (used by the /r/[slug]
 -- route handler and the publish script) can read or write these tables.
 alter table public.prospect_reports enable row level security;
-alter table public.report_views enable row level security;
+alter table public.report_views enable row level security;;

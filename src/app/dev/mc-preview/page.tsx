@@ -16,6 +16,35 @@ const quiet = new Array(24).fill(0);
 const FIXTURE: MissionData = {
   fetchedAt: new Date(Date.now() - 40_000).toISOString(),
   rollup: { agents_ok: 3, agents_degraded: 1, agents_down: 1, overdue: 1, due_soon: 1 },
+  repos: [
+    {
+      repo: "triple_3_platform",
+      branch: "main",
+      remote_url: "https://github.com/jconn333/triple-3-platform.git",
+      last_commit_at: new Date(Date.now() - 2 * 3600_000).toISOString(),
+      last_commit_subject: "Triage worker heartbeats agent_health; freshness canary + Pingo dead-man",
+      daily_commits: [1, 2, 0, 0, 0, 0, 0, 0, 0, 6, 0, 1, 1, 2],
+      dirty_files: 3,
+    },
+    {
+      repo: "eco_seal",
+      branch: "main",
+      remote_url: null,
+      last_commit_at: new Date(Date.now() - 5 * 3600_000).toISOString(),
+      last_commit_subject: "Estimator pass 3: sealed takeoffs for TUSC job batch",
+      daily_commits: [0, 2, 0, 0, 48, 37, 16, 0, 0, 16, 2, 1, 52, 0],
+      dirty_files: 10,
+    },
+    {
+      repo: "pricey-pro",
+      branch: "main",
+      remote_url: null,
+      last_commit_at: new Date(Date.now() - 2 * 86400_000).toISOString(),
+      last_commit_subject: "Push module: clamp min-stay updates to listing bounds",
+      daily_commits: [0, 0, 0, 0, 0, 9, 0, 1, 1, 0, 0, 0, 0, 0],
+      dirty_files: 0,
+    },
+  ],
   companies: [
     {
       company_id: "ecoseal",

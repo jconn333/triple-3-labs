@@ -1,6 +1,4 @@
 -- Triple 3 Labs ticketing system v1
--- NOTE: already applied to live project cksdehpjxvkrvubmjjcl via Supabase MCP on 2026-07-19
--- (migration name: ticketing_system_v1). This file starts the in-repo versioning convention.
 -- Tickets + AI triage pipeline: tiered autonomy (0=answer, 1=auto-fix, 2=approve-gated, 3=human)
 
 create or replace function set_updated_at()
@@ -153,4 +151,4 @@ insert into public.runbooks (key, title, description, tier, action_type) values
   ('restart_agent_service', 'Restart customer agent service', 'Agent process hung or heartbeat stale but host reachable. Restart the systemd/tmux service for the agent. Reversible.', 2, 'ssh_allowlisted'),
   ('rerun_sync_job', 'Re-run a failed sync/task job', 'A scheduled job failed transiently (network/API blip). Re-run the exact job script from the code allowlist.', 2, 'ssh_allowlisted'),
   ('recheck_canary', 'Re-run canary check and confirm recovery', 'Telemetry says the issue self-resolved; re-verify the relevant canary and report proof to the customer.', 1, 'telemetry_check'),
-  ('escalate_human', 'Escalate to Jeff', 'Could not reproduce, no matching runbook, reopened ticket, angry/legal framing, billing, or credentials involved.', 3, 'none');
+  ('escalate_human', 'Escalate to Jeff', 'Could not reproduce, no matching runbook, reopened ticket, angry/legal framing, billing, or credentials involved.', 3, 'none');;

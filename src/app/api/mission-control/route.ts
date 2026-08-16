@@ -51,6 +51,16 @@ export interface CompanyNode {
   next_due: string | null;
 }
 
+export interface RepoRow {
+  repo: string;
+  branch: string | null;
+  remote_url: string | null;
+  last_commit_at: string | null;
+  last_commit_subject: string | null;
+  daily_commits: number[];
+  dirty_files: number;
+}
+
 function ageSeconds(ts: string): number {
   return (Date.now() - new Date(ts).getTime()) / 1000;
 }
@@ -83,7 +93,7 @@ export async function GET() {
   // 25h covers the activity trace and every task_stale_seconds threshold in
   // the registry, and keeps the query under PostgREST's row cap.
   const since = new Date(Date.now() - 25 * 3600_000).toISOString();
-  const [registryRes, healthRes, canaryRes, tasksRes, commitmentsRes] = await Promise.all([
+  const [registryRes, healthRes, canaryRes, tasksRes, commitmentsRes, reposRes] = await Promise.all([
     ops.from("agent_registry").select("*").order("sort_order"),
     ops.from("agent_health").select("*"),
     ops
@@ -102,6 +112,11 @@ export async function GET() {
       .from("vw_commitment_status")
       .select("id, customer_id, agent_id, name, kind, next_due, status, last_delivered, notes")
       .eq("active", true),
+    supabase
+      .from("repo_activity")
+      .select("repo, branch, remote_url, last_commit_at, last_commit_subject, daily_commits, dirty_files")
+      .order("last_commit_at", { ascending: false })
+      .limit(12),
   ]);
 
   const firstError =
@@ -269,8 +284,14 @@ export async function GET() {
   }
 
   const allAgents = companies.flatMap((c) => c.agents);
+  // Repo feed is additive — an error here shouldn't blank the fleet view.
+  const repos: RepoRow[] = (reposRes.error ? [] : (reposRes.data ?? [])).map((r) => ({
+    ...r,
+    daily_commits: Array.isArray(r.daily_commits) ? r.daily_commits : [],
+  }));
   return NextResponse.json({
     companies,
+    repos,
     rollup: {
       agents_ok: allAgents.filter((a) => a.state === "ok").length,
       agents_degraded: allAgents.filter((a) => a.state === "degraded").length,

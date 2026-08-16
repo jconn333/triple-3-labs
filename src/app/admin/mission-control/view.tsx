@@ -57,8 +57,19 @@ export interface CompanyNode {
   next_due: string | null;
 }
 
+export interface RepoRow {
+  repo: string;
+  branch: string | null;
+  remote_url: string | null;
+  last_commit_at: string | null;
+  last_commit_subject: string | null;
+  daily_commits: number[];
+  dirty_files: number;
+}
+
 export interface MissionData {
   companies: CompanyNode[];
+  repos?: RepoRow[];
   rollup: {
     agents_ok: number;
     agents_degraded: number;
@@ -112,19 +123,28 @@ function ProcessStrip({ processes }: { processes: ProcessRow[] }) {
   );
 }
 
-// 24 hourly buckets of task runs, oldest → newest. Baseline-anchored bars in
-// the accent hue (activity is volume, not status); latest hour emphasized.
-function ActivityTrace({ buckets }: { buckets: number[] }) {
+// Bucketed activity, oldest → newest, baseline-anchored bars in the accent
+// hue (activity is volume, not status); latest bucket emphasized.
+function ActivityTrace({
+  buckets,
+  unit = "hour",
+  noun = "run",
+}: {
+  buckets: number[];
+  unit?: "hour" | "day";
+  noun?: string;
+}) {
   const max = Math.max(...buckets, 1);
+  const u = unit === "hour" ? "h" : "d";
   return (
     <div className="flex h-5 items-end gap-[2px]" aria-hidden>
       {buckets.map((n, i) => {
         const h = n === 0 ? 2 : Math.max(4, Math.round((n / max) * 20));
-        const hoursAgo = buckets.length - 1 - i;
+        const ago = buckets.length - 1 - i;
         return (
           <span
             key={i}
-            title={`${n} run${n === 1 ? "" : "s"} · ${hoursAgo === 0 ? "this hour" : `${hoursAgo}h ago`}`}
+            title={`${n} ${noun}${n === 1 ? "" : "s"} · ${ago === 0 ? `this ${unit}` : `${ago}${u} ago`}`}
             style={{ height: `${h}px` }}
             className={`w-[5px] rounded-[1px] ${
               n === 0 ? "bg-white/10" : i === buckets.length - 1 ? "bg-violet" : "bg-violet/45"
@@ -273,7 +293,7 @@ function AgentRow({ agent }: { agent: AgentNode }) {
               <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/30">
                 Runs · last 24h
               </p>
-              <ActivityTrace buckets={agent.activity} />
+              <ActivityTrace buckets={agent.activity} unit="hour" noun="run" />
             </div>
           )}
 
@@ -409,7 +429,7 @@ export default function MissionControlView({
         </div>
       )}
 
-      <div className="flex flex-col gap-5">
+      <div className="mb-8 flex flex-col gap-5">
         {companies.length === 0 ? (
           <p className="rounded-lg border border-white/10 px-5 py-8 text-center text-sm text-white/40">
             Nothing needs attention.
@@ -450,6 +470,58 @@ export default function MissionControlView({
           ))
         )}
       </div>
+
+      {/* Recent work — where did we leave off, repo by repo. Only rendered on
+          the unfiltered view: it's orientation, not triage. */}
+      {filter === "all" && (data.repos?.length ?? 0) > 0 && (
+        <section>
+          <div className="mb-3 flex items-baseline gap-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-white/40">
+              Recent work
+            </h2>
+            <span className="text-[11px] text-white/25">
+              local repos · commits last 14 days
+            </span>
+          </div>
+          <div className="overflow-hidden rounded-lg border border-white/10">
+            <div className="divide-y divide-white/5">
+              {data.repos!.map((r) => (
+                <div
+                  key={r.repo}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3 hover:bg-white/[0.03]"
+                >
+                  <span className="min-w-40 font-mono text-[13px] text-white">
+                    {r.repo}
+                  </span>
+                  <ActivityTrace
+                    buckets={r.daily_commits.length ? r.daily_commits : new Array(14).fill(0)}
+                    unit="day"
+                    noun="commit"
+                  />
+                  <span
+                    className="hidden max-w-72 truncate text-xs text-white/45 lg:inline"
+                    title={r.last_commit_subject ?? undefined}
+                  >
+                    {r.last_commit_subject}
+                  </span>
+                  <span className="flex-1" />
+                  {r.dirty_files > 0 && (
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/[0.08] px-2 py-0.5 text-[11px] text-amber-300/90"
+                      title={`${r.dirty_files} uncommitted file${r.dirty_files === 1 ? "" : "s"}`}
+                    >
+                      {r.dirty_files} uncommitted
+                    </span>
+                  )}
+                  <span className="text-xs tabular-nums text-white/40">
+                    {r.last_commit_at ? formatRelativeTime(r.last_commit_at) : "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
