@@ -20,6 +20,9 @@ import {
   Eye,
   GitBranch,
   AlertTriangle,
+  CheckCircle2,
+  HelpCircle,
+  Printer,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -646,180 +649,30 @@ export default function TakeoffPage() {
             className="mb-16 text-center"
           >
             <span className="mb-4 inline-block text-sm font-medium uppercase tracking-widest text-cyan-400">
-              Inside the workspace
+              The deliverable
             </span>
             <h2
               className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl"
               style={{ fontFamily: "var(--font-space-grotesk)" }}
             >
-              Where the estimator{" "}
-              <span className="gradient-text">stays in control</span>
+              A report you can{" "}
+              <span className="gradient-text">price straight off</span>
             </h2>
             <p className="mx-auto max-w-2xl text-lg text-white/50">
-              The plan set on one side, every extracted element on the other —
-              each linked to its evidence and computed by a rule you can name.
+              Your reviewed estimate on one side, the findings that matter on
+              the other — hover a flag and the exact schedule lines light up.
+              Every number traces to its sheet; every flag lands on a line.
             </p>
           </motion.div>
 
-          <div className="grid gap-8 lg:grid-cols-2">
-            {/* Review workspace mock */}
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6 }}
-              className="glass-card overflow-hidden rounded-2xl p-6"
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    Review workspace
-                  </p>
-                  <p className="text-xs text-white/40">
-                    Approve, edit, or flag every element
-                  </p>
-                </div>
-                <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
-                  Audit trail on
-                </span>
-              </div>
-              <div className="grid grid-cols-5 gap-3">
-                {/* Faux plan viewer */}
-                <div className="col-span-2 rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                  <p className="mb-2 text-[10px] uppercase tracking-widest text-white/30">
-                    Sheet A-201
-                  </p>
-                  <svg
-                    viewBox="0 0 120 150"
-                    className="h-auto w-full"
-                    aria-hidden="true"
-                  >
-                    <rect
-                      x="6"
-                      y="6"
-                      width="108"
-                      height="138"
-                      fill="none"
-                      stroke="rgba(255,255,255,0.12)"
-                    />
-                    <line x1="6" y1="46" x2="114" y2="46" stroke="rgba(6,182,212,0.5)" />
-                    <line x1="6" y1="92" x2="114" y2="92" stroke="rgba(6,182,212,0.5)" />
-                    {Array.from({ length: 10 }).map((_, i) => (
-                      <line
-                        key={i}
-                        x1={14 + i * 10}
-                        y1="46"
-                        x2={14 + i * 10}
-                        y2="92"
-                        stroke="rgba(124,58,237,0.45)"
-                      />
-                    ))}
-                    <rect
-                      x="30"
-                      y="60"
-                      width="30"
-                      height="18"
-                      fill="none"
-                      stroke="rgba(244,114,182,0.6)"
-                      strokeDasharray="3 2"
-                    />
-                  </svg>
-                </div>
-                {/* Faux element list */}
-                <div className="col-span-3 space-y-2">
-                  {[
-                    { label: "Element A-12", detail: "run · 412 lf", ok: true },
-                    { label: "Assembly W-2", detail: "face · 268 sf", ok: true },
-                    { label: "Connector C-4", detail: "typ. · 96 ea", ok: false },
-                    { label: "Corner detail D-1", detail: "std · 48 ea", ok: true },
-                  ].map((row) => (
-                    <div
-                      key={row.label}
-                      className="flex items-center justify-between rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-medium text-white/80">
-                          {row.label}
-                        </p>
-                        <p className="truncate text-[10px] text-white/40">
-                          {row.detail} · A-201
-                        </p>
-                      </div>
-                      {row.ok ? (
-                        <Check
-                          size={14}
-                          className="shrink-0 text-emerald-400"
-                        />
-                      ) : (
-                        <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-medium text-amber-400">
-                          Flagged
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <p className="mt-4 text-[11px] italic text-white/25">
-                Representative of the review workspace
-              </p>
-            </motion.div>
-
-            {/* Estimate export mock */}
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="glass-card overflow-hidden rounded-2xl p-6"
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    Estimate export
-                  </p>
-                  <p className="text-xs text-white/40">
-                    Every quantity carries its evidence
-                  </p>
-                </div>
-                <span className="rounded-full bg-violet/15 px-3 py-1 text-xs font-medium text-violet-300">
-                  Traceable
-                </span>
-              </div>
-              <div className="overflow-hidden rounded-xl border border-white/10">
-                <div className="grid grid-cols-[1.6fr_0.7fr_0.7fr_1fr] bg-white/[0.04] px-3 py-2 text-[10px] uppercase tracking-wider text-white/40">
-                  <span>Item</span>
-                  <span className="text-right">Qty</span>
-                  <span className="text-right">Unit</span>
-                  <span className="text-right">Source</span>
-                </div>
-                {[
-                  { item: "Element A-12 — run", qty: "412", wt: "lf", src: "A-201" },
-                  { item: "Assembly W-2 — face", qty: "268", wt: "sf", src: "A-202" },
-                  { item: "Connector C-4 — typ.", qty: "96", wt: "ea", src: "A-201" },
-                  { item: "Accessory set — zone 3", qty: "540", wt: "ea", src: "A-410" },
-                  { item: "Corner detail D-1", qty: "48", wt: "ea", src: "A-202" },
-                ].map((row) => (
-                  <div
-                    key={row.item}
-                    className="grid grid-cols-[1.6fr_0.7fr_0.7fr_1fr] items-center border-t border-white/5 px-3 py-2 text-xs"
-                  >
-                    <span className="truncate text-white/80">{row.item}</span>
-                    <span className="text-right text-white/60">{row.qty}</span>
-                    <span className="text-right text-white/60">{row.wt}</span>
-                    <span className="text-right">
-                      <span className="rounded bg-cyan/10 px-1.5 py-0.5 text-[10px] text-cyan-300">
-                        {row.src}
-                      </span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-4 text-[11px] italic text-white/25">
-                Representative data · rule IDs attach to each line in the real
-                export
-              </p>
-            </motion.div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6 }}
+          >
+            <ReportMock />
+          </motion.div>
         </div>
       </section>
 
@@ -1185,6 +1038,313 @@ function FaqList({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* ── Faithful mock of the published interactive report ──────────────
+   Mirrors the real deliverable's structure — verdict banner, aSa-style
+   schedule, and a findings rail hover-synced to the line rows both ways,
+   with an APPROVED stamp. Sample data only; no client job. */
+type MockLine = {
+  ln: number;
+  seg: string;
+  mark: string;
+  func: string;
+  size: string;
+  qty: number;
+  length: string;
+  lb: number;
+};
+
+type MockFinding = {
+  id: string;
+  kind: "finding" | "question" | "confirmation";
+  severity?: "high" | "medium" | "low";
+  lbNote?: string;
+  title: string;
+  body: string;
+  lines: number[];
+};
+
+const mockLines: MockLine[] = [
+  { ln: 1, seg: "Footings", mark: "F1", func: "cont.", size: "#5", qty: 24, length: "40'-0\"", lb: 1001 },
+  { ln: 2, seg: "Footings", mark: "F1", func: "dowel", size: "#4", qty: 96, length: "2'-6\"", lb: 160 },
+  { ln: 3, seg: "Walls", mark: "W1", func: "vert.", size: "#5", qty: 148, length: "12'-0\"", lb: 1851 },
+  { ln: 4, seg: "Walls", mark: "W1", func: "horiz.", size: "#4", qty: 64, length: "40'-0\"", lb: 1708 },
+  { ln: 5, seg: "Slab-on-grade", mark: "S1", func: "mat", size: "#4", qty: 210, length: "20'-0\"", lb: 2803 },
+  { ln: 6, seg: "Slab-on-grade", mark: "S1", func: "edge", size: "#5", qty: 36, length: "20'-0\"", lb: 751 },
+];
+
+const mockFindings: MockFinding[] = [
+  {
+    id: "f1",
+    kind: "finding",
+    severity: "high",
+    lbNote: "+1,600 lb",
+    title: "W1 verticals keyed at 12\" — elevation calls 6\" o.c.",
+    body: "Halving the spacing roughly doubles the W1 vertical count. Worth confirming before the number is priced.",
+    lines: [3],
+  },
+  {
+    id: "q1",
+    kind: "question",
+    lbNote: "≈2,800 lb",
+    title: "Is the slab mat in your scope?",
+    body: "S1 is the single biggest line — confirm it's yours to furnish and not the GC's.",
+    lines: [5],
+  },
+  {
+    id: "c1",
+    kind: "confirmation",
+    title: "Footing F1 laps check out",
+    body: "Class B laps on the #5 top bars match the 40-bar-diameter rule for the keyed f'c.",
+    lines: [1, 2],
+  },
+];
+
+const findingKindMeta: Record<
+  MockFinding["kind"],
+  { label: string; icon: LucideIcon; accent: string; chip: string }
+> = {
+  finding: {
+    label: "Worth fixing",
+    icon: AlertTriangle,
+    accent: "text-amber-400",
+    chip: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+  },
+  question: {
+    label: "Question for you",
+    icon: HelpCircle,
+    accent: "text-sky-400",
+    chip: "border-sky-500/40 bg-sky-500/10 text-sky-300",
+  },
+  confirmation: {
+    label: "Checked and clean",
+    icon: CheckCircle2,
+    accent: "text-emerald-400",
+    chip: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+  },
+};
+
+const severityBadge: Record<"high" | "medium" | "low", string> = {
+  high: "border-rose-500/50 bg-rose-500/10 text-rose-300",
+  medium: "border-amber-500/50 bg-amber-500/10 text-amber-300",
+  low: "border-sky-500/50 bg-sky-500/10 text-sky-300",
+};
+
+type Hover = { type: "line"; id: number } | { type: "finding"; id: string } | null;
+
+function ReportMock() {
+  const [hover, setHover] = useState<Hover>(null);
+  const totalLb = mockLines.reduce((sum, l) => sum + l.lb, 0);
+  const segments = mockLines.reduce<string[]>((acc, l) => {
+    if (!acc.includes(l.seg)) acc.push(l.seg);
+    return acc;
+  }, []);
+
+  const lineActive = (ln: number) =>
+    hover?.type === "line"
+      ? hover.id === ln
+      : hover?.type === "finding"
+        ? (mockFindings.find((f) => f.id === hover.id)?.lines.includes(ln) ?? false)
+        : false;
+
+  const findingActive = (f: MockFinding) =>
+    hover?.type === "finding"
+      ? hover.id === f.id
+      : hover?.type === "line"
+        ? f.lines.includes(hover.id)
+        : false;
+
+  return (
+    <div className="glass-card relative overflow-hidden rounded-2xl">
+      {/* APPROVED stamp */}
+      <div className="pointer-events-none absolute right-4 top-14 z-20 rotate-[-9deg] sm:right-8">
+        <span className="inline-block rounded-md border-2 border-emerald-400/60 px-3 py-1 text-lg font-extrabold uppercase tracking-widest text-emerald-400/70">
+          Approved
+        </span>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center justify-between border-b border-white/[0.06] bg-white/[0.02] px-5 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+            <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+            <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">Reviewed estimate</p>
+            <p className="text-[11px] text-white/40">Sample project · 6 lines</p>
+          </div>
+        </div>
+        <div className="hidden items-center gap-2 sm:flex">
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60">
+            <Eye size={13} /> View plans
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60">
+            <Printer size={13} /> Print
+          </span>
+        </div>
+      </div>
+
+      <div className="p-5">
+        {/* Verdict banner */}
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="size-3 shrink-0 rounded-full bg-amber-400" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white">
+                Priceable — two items to resolve first
+              </p>
+              <p className="text-xs text-white/45">
+                Nothing here blocks a bid; two flags move real weight.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-medium tabular-nums">
+            <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-white/50">
+              6 lines reviewed
+            </span>
+            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-amber-300">
+              1 to fix
+            </span>
+            <span className="rounded-full border border-sky-500/40 bg-sky-500/10 px-2 py-0.5 text-sky-300">
+              1 question
+            </span>
+            <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">
+              1 confirmed correct
+            </span>
+          </div>
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">
+          {/* aSa-style schedule */}
+          <div className="overflow-hidden rounded-xl border border-white/10">
+            <div className="grid grid-cols-[2rem_1fr_2rem_2.2rem_3.4rem_3.6rem] gap-1 bg-white/[0.04] px-3 py-2 text-[10px] uppercase tracking-wider text-white/40">
+              <span>Ln</span>
+              <span>Mark</span>
+              <span>Size</span>
+              <span className="text-right">Qty</span>
+              <span className="text-right">Length</span>
+              <span className="text-right">Weight</span>
+            </div>
+            {segments.map((seg) => (
+              <div key={seg}>
+                <div className="border-t border-white/5 bg-white/[0.015] px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/35">
+                  {seg}
+                </div>
+                {mockLines
+                  .filter((l) => l.seg === seg)
+                  .map((l) => {
+                    const active = lineActive(l.ln);
+                    return (
+                      <div
+                        key={l.ln}
+                        onMouseEnter={() => setHover({ type: "line", id: l.ln })}
+                        onMouseLeave={() => setHover(null)}
+                        className={`grid cursor-default grid-cols-[2rem_1fr_2rem_2.2rem_3.4rem_3.6rem] gap-1 border-t border-white/5 px-3 py-1.5 text-xs tabular-nums transition-colors ${
+                          active ? "bg-cyan/10" : "hover:bg-white/[0.03]"
+                        }`}
+                      >
+                        <span className="text-white/35">{l.ln}</span>
+                        <span className="truncate text-white/80">
+                          {l.mark}{" "}
+                          <span className="text-white/40">{l.func}</span>
+                        </span>
+                        <span className="text-white/60">{l.size}</span>
+                        <span className="text-right text-white/60">{l.qty}</span>
+                        <span className="text-right text-white/50">{l.length}</span>
+                        <span className="text-right font-medium text-white/80">
+                          {l.lb.toLocaleString()}
+                        </span>
+                      </div>
+                    );
+                  })}
+              </div>
+            ))}
+            <div className="grid grid-cols-[2rem_1fr_2rem_2.2rem_3.4rem_3.6rem] gap-1 border-t border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold tabular-nums">
+              <span className="col-span-4 text-white/50">Total</span>
+              <span className="text-right text-white/40">6 ln</span>
+              <span className="gradient-text text-right">
+                {totalLb.toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          {/* Findings rail */}
+          <div className="space-y-3">
+            {mockFindings.map((f) => {
+              const meta = findingKindMeta[f.kind];
+              const Icon = meta.icon;
+              const active = findingActive(f);
+              return (
+                <div
+                  key={f.id}
+                  onMouseEnter={() => setHover({ type: "finding", id: f.id })}
+                  onMouseLeave={() => setHover(null)}
+                  className={`cursor-default rounded-xl border p-3.5 transition-colors ${
+                    active
+                      ? "border-cyan/40 bg-cyan/[0.06]"
+                      : "border-white/8 bg-white/[0.02]"
+                  }`}
+                >
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    <Icon size={13} className={meta.accent} />
+                    <span
+                      className={`text-[10px] font-semibold uppercase tracking-wider ${meta.accent}`}
+                    >
+                      {meta.label}
+                    </span>
+                    <span className="ml-auto flex items-center gap-1">
+                      {f.lbNote ? (
+                        <span
+                          className={`rounded border px-1.5 py-0.5 text-[10px] font-medium tabular-nums ${meta.chip}`}
+                        >
+                          {f.lbNote}
+                        </span>
+                      ) : null}
+                      {f.kind === "finding" && f.severity ? (
+                        <span
+                          className={`rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${severityBadge[f.severity]}`}
+                        >
+                          {f.severity}
+                        </span>
+                      ) : null}
+                    </span>
+                  </div>
+                  <p className="text-xs font-medium leading-snug text-white/85">
+                    {f.title}
+                  </p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-white/45">
+                    {f.body}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {f.lines.map((ln) => (
+                      <span
+                        key={ln}
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-medium tabular-nums transition-colors ${
+                          lineActive(ln)
+                            ? "bg-cyan/20 text-cyan-200"
+                            : "bg-white/[0.05] text-white/50"
+                        }`}
+                      >
+                        Ln {ln}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <p className="mt-4 text-[11px] italic text-white/25">
+          Representative of the published report · sample data · hover a finding
+          to light up its schedule lines
+        </p>
+      </div>
     </div>
   );
 }
