@@ -9,6 +9,7 @@ import { LogoIcon } from "@/components/Logo";
 const navLinks = [
   { label: "Agents", href: "/#agents" },
   { label: "Services", href: "/#services" },
+  { label: "Takeoff", href: "/takeoff-estimator" },
   { label: "About", href: "/about" },
   { label: "Blog", href: "/blog" },
   { label: "Case Studies", href: "/work", highlight: true },
