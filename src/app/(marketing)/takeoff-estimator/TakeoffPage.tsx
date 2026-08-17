@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Eye,
   GitBranch,
+  AlertTriangle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -27,15 +28,15 @@ import Footer from "@/components/Footer";
 import ContactForm from "@/components/admin/ContactForm";
 
 /* ────────────────────────────────────────────────────────────────
-   Content — every claim here is real, drawn from the validation
-   work in takeoff-core / the client pilots. No fabricated stats,
+   Content — every claim here is real, drawn from the shipped product
+   and delivered reviews. No client names, no fabricated stats,
    ratings, contractor counts, or pricing.
    ──────────────────────────────────────────────────────────────── */
 
 const heroStats: { value: string; label: string }[] = [
-  { value: "17 jobs", label: "Historical estimates run through blind validation" },
-  { value: "2 estimators", label: "Independent AI takeoffs, cross-examined every time" },
   { value: "Evidence-linked", label: "No quantity without a source sheet and a rule" },
+  { value: "2 AI estimators", label: "Independent takeoffs, cross-checked on every job" },
+  { value: "Same-day", label: "Turnaround on a full takeoff review" },
   { value: "Append-only", label: "Full audit trail on every review action" },
 ];
 
@@ -49,7 +50,8 @@ const marqueeItems = [
   "PDF plan sets",
   "Evidence-linked quantities",
   "Deterministic rules",
-  "Blind validation",
+  "Independent cross-check",
+  "Same-day turnaround",
   "Append-only audit trail",
   "Human-in-the-loop",
 ];
@@ -62,9 +64,9 @@ const differentiators: {
 }[] = [
   {
     icon: GitBranch,
-    title: "Blind, dual-estimator validation",
+    title: "Two independent takeoffs, cross-checked",
     description:
-      "Two independent AI systems read the same drawing set and each produce a full takeoff and estimate — sealed with a commit before either is allowed to see the historical answer key. It's a blind test every time, not a demo tuned to look good.",
+      "Two AI systems read the same drawing set and each produce a full takeoff independently. Where they disagree, the difference gets adjudicated instead of averaged — so a soft read doesn't quietly become the number you bid.",
     gradient: "from-violet to-purple",
   },
   {
@@ -90,9 +92,9 @@ const differentiators: {
   },
   {
     icon: Scale,
-    title: "The answer key gets cross-examined too",
+    title: "Run it against your own estimate",
     description:
-      "Historical estimates aren't treated as gospel — a past estimator's assumptions can be wrong. Real disagreements get adjudicated, not averaged away, so validation makes the system sharper instead of just agreeable.",
+      "Point it at an estimate you already have and it works as a second takeoff — flagging disagreements both ways, where the plan reads light and where it reads heavy, so a wrong number gets caught before it's priced instead of after.",
     gradient: "from-amber-400 to-orange-500",
   },
   {
@@ -122,9 +124,9 @@ const processSteps: {
   {
     number: "02",
     icon: Lock,
-    title: "Two AI estimators run blind",
+    title: "Two AI estimators run independently",
     description:
-      "Each independently produces a complete takeoff and estimate, sealed by a commit before either one is allowed to see a historical answer. Then they're cross-examined against each other and the record.",
+      "Each produces a complete takeoff and estimate on its own, then the two are cross-checked against each other — and against your existing estimate when you bring one — with every disagreement flagged for review.",
     gradient: "from-cyan to-blue-500",
   },
   {
@@ -190,16 +192,16 @@ const featuredTrades: {
   {
     icon: Boxes,
     name: "Rebar & concrete accessories",
-    status: "In validation",
+    status: "Live",
     statusTone: "active",
-    note: "The origin trade — validated job by job against real historical estimates.",
+    note: "The origin trade — every quantity traced to the sheet it came from and the rule behind it.",
   },
   {
     icon: Building2,
     name: "Glazing & glass",
-    status: "Early validation",
+    status: "Rolling out",
     statusTone: "progress",
-    note: "The same method, instantiated for a second trade and being proven out.",
+    note: "The same engine, instantiated for a second trade — new rulebook, same discipline.",
   },
 ];
 
@@ -225,15 +227,15 @@ const moreTrades: string[] = [
 const faqs: { id: string; question: string; answer: string }[] = [
   {
     id: "live",
-    question: "Is this live software I can log into today?",
+    question: "Is this a working product or a concept?",
     answer:
-      "It's in active validation. We're proving the estimating logic against real historical jobs before it ever touches a live bid — so instead of a signup page, early partners work with us hands-on while the system earns its trust job by job.",
+      "It's a working product. There's a live review workspace where a plan set is read, every extracted element is checked against the sheet it came from, and a takeoff comes out with an audit trail behind every number. We onboard you to your trade and standards rather than pointing you at a generic signup — but the software is real and running today.",
   },
   {
     id: "trades",
     question: "What trades does it cover?",
     answer:
-      "Rebar and concrete accessories first — that's where the deepest validation lives. Glazing is in early validation, and the underlying method (plan pre-processing, a rules engine, a review workspace, and an audit trail) is trade-agnostic, so new trades are a matter of building out the rulebook.",
+      "Rebar and concrete accessories today, with glazing rolling out. The engine underneath — plan pre-processing, a rules registry, a review workspace, and an audit trail — is trade-agnostic, so a new trade is a matter of building out the rulebook, not a rewrite.",
   },
   {
     id: "vs-bluebeam",
@@ -245,7 +247,7 @@ const faqs: { id: string; question: string; answer: string }[] = [
     id: "trust",
     question: "Can I trust the numbers?",
     answer:
-      "Every quantity traces back to a source sheet and a versioned rule, and two independent AI takeoffs are cross-examined before either one sees the historical answer. The whole design is built around one line: AI proposes; the estimator decides.",
+      "Every quantity traces back to a source sheet and a versioned rule, two independent AI takeoffs are cross-checked against each other, and an estimator approves every line. The whole design is built around one line: AI proposes; the estimator decides.",
   },
   {
     id: "invent",
@@ -257,7 +259,7 @@ const faqs: { id: string; question: string; answer: string }[] = [
     id: "start",
     question: "What do you need from me to get started?",
     answer:
-      "A plan set and a handful of historical estimates for the same trade. We run the system against those real jobs and adjudicate every disagreement before anything you'd bid on goes live.",
+      "A plan set and a few of your past estimates for the trade. We fit the rules to your shop's standards, then you're taking off live jobs with a source sheet and a rule behind every line.",
   },
 ];
 
@@ -301,7 +303,7 @@ export default function TakeoffPage() {
             transition={{ duration: 0.6, delay: 0.15 }}
             className="mb-6 inline-block rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-violet-400"
           >
-            AI Takeoff &amp; Estimating · In Development
+            AI Takeoff &amp; Estimating Software
           </motion.span>
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
@@ -343,10 +345,10 @@ export default function TakeoffPage() {
               <div className="absolute inset-0 bg-gradient-to-r from-purple to-cyan opacity-0 transition-opacity group-hover:opacity-100" />
             </a>
             <Link
-              href="/work/takeoff-estimator"
+              href="#how"
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-8 py-4 text-base font-semibold text-white/80 transition-all hover:border-white/20 hover:text-white"
             >
-              See the validation story
+              See how it works
             </Link>
           </motion.div>
 
@@ -543,9 +545,92 @@ export default function TakeoffPage() {
           </div>
 
           <p className="mx-auto mt-14 max-w-xl text-center text-sm text-white/30">
-            Still in validation — proven against historical jobs before it
-            touches a live bid.
+            Every quantity comes out the far end traceable to a source sheet
+            and the versioned rule that produced it.
           </p>
+        </div>
+      </section>
+
+      {/* ── Proof / what it catches ──────────────────────────────── */}
+      <section id="proof" className="relative px-6 py-24">
+        <div className="pointer-events-none absolute right-0 top-1/4 h-[500px] w-[500px] rounded-full bg-amber-500/5 blur-[128px]" />
+        <div className="relative z-10 mx-auto max-w-5xl">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+            className="mb-14 text-center"
+          >
+            <span className="mb-4 inline-block text-sm font-medium uppercase tracking-widest text-amber-400">
+              What it catches
+            </span>
+            <h2
+              className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl"
+              style={{ fontFamily: "var(--font-space-grotesk)" }}
+            >
+              The kind of miss that{" "}
+              <span className="gradient-text">loses the bid</span>
+            </h2>
+            <p className="mx-auto max-w-2xl text-lg text-white/50">
+              A single mis-keyed dimension can quietly load thousands of pounds
+              of steel into an estimate. Run as a second takeoff, it gets
+              flagged before the number is priced.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6 }}
+            className="glass-card overflow-hidden rounded-3xl p-8 sm:p-12"
+          >
+            <div className="grid items-center gap-10 md:grid-cols-[auto_1fr]">
+              <div className="text-center md:text-left">
+                <div className="mb-4 inline-flex rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 p-3">
+                  <AlertTriangle size={22} className="text-white" />
+                </div>
+                <p
+                  className="gradient-text text-6xl font-bold leading-none sm:text-7xl"
+                  style={{ fontFamily: "var(--font-space-grotesk)" }}
+                >
+                  ~19,000 lb
+                </p>
+                <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/50">
+                  of phantom steel on a single assembly — a wall dimension
+                  keyed at roughly ten times its real length. Flagged before
+                  the bid was priced.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3 md:border-l md:border-white/[0.06] md:pl-10">
+                {[
+                  { value: "1", label: "Confirmed finding on the review" },
+                  { value: "0", label: "False claims in the deliverable" },
+                  { value: "Same-day", label: "Turnaround, plan set to report" },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="rounded-2xl border border-white/8 bg-white/[0.02] p-5 text-center sm:text-left"
+                  >
+                    <p
+                      className="gradient-text text-2xl font-bold sm:text-3xl"
+                      style={{ fontFamily: "var(--font-space-grotesk)" }}
+                    >
+                      {s.value}
+                    </p>
+                    <p className="mt-1 text-xs leading-snug text-white/45">
+                      {s.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="mt-8 border-t border-white/[0.06] pt-6 text-[11px] italic text-white/25">
+              From a real review. Job details anonymized — the system reconstructed
+              the correct quantity to the pound.
+            </p>
+          </motion.div>
         </div>
       </section>
 
@@ -675,7 +760,7 @@ export default function TakeoffPage() {
                 </div>
               </div>
               <p className="mt-4 text-[11px] italic text-white/25">
-                Representative UI · real screenshots on request
+                Representative of the review workspace
               </p>
             </motion.div>
 
@@ -944,20 +1029,20 @@ export default function TakeoffPage() {
               className="mb-5 text-3xl font-bold tracking-tight sm:text-4xl"
               style={{ fontFamily: "var(--font-space-grotesk)" }}
             >
-              No signup page.{" "}
-              <span className="gradient-text">A validation partnership.</span>
+              Not shelf software.{" "}
+              <span className="gradient-text">Fitted to your shop.</span>
             </h2>
             <p className="mx-auto mb-8 max-w-2xl text-lg leading-relaxed text-white/60">
-              We take on a trade, run the system against your real historical
-              jobs, and adjudicate every disagreement — and it only goes near a
-              live bid once the numbers hold up. Pricing is scoped to the trade
-              and the work, not a shelf plan.
+              We tune the rules registry to your trade and your standards,
+              point it at your plan sets, and you&apos;re running takeoffs with
+              a source sheet and a rule behind every number. Pricing is scoped
+              to the trade and the volume, not a shelf plan.
             </p>
             <div className="mb-10 grid gap-4 text-left sm:grid-cols-3">
               {[
-                "Bring a plan set + a few historical estimates",
-                "We validate blind against your real jobs",
-                "Go live only when it earns your trust",
+                "Bring a plan set + a few of your estimates",
+                "We fit the rules to your trade and standards",
+                "You run takeoffs with evidence on every line",
               ].map((step, i) => (
                 <div
                   key={step}
@@ -1042,8 +1127,8 @@ export default function TakeoffPage() {
             <ContactForm />
           </div>
           <p className="mt-4 text-center text-sm text-white/30">
-            We validate against your real jobs before anything touches a live
-            bid.
+            Every quantity comes back tied to a source sheet and the rule that
+            produced it.
           </p>
         </motion.div>
       </section>
