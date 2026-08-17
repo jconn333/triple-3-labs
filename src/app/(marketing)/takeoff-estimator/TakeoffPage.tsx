@@ -4,21 +4,12 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
-  Upload,
-  Lock,
-  ClipboardCheck,
-  FileSpreadsheet,
-  Ruler,
-  FileStack,
-  Scale,
-  ShieldCheck,
   Check,
   X,
   Building2,
   Boxes,
   ChevronDown,
   Eye,
-  GitBranch,
   AlertTriangle,
   CheckCircle2,
   HelpCircle,
@@ -59,96 +50,7 @@ const marqueeItems = [
   "Human-in-the-loop",
 ];
 
-const differentiators: {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  gradient: string;
-}[] = [
-  {
-    icon: GitBranch,
-    title: "Two independent takeoffs, cross-checked",
-    description:
-      "Two AI systems read the same drawing set and each produce a full takeoff independently. Where they disagree, the difference gets adjudicated instead of averaged — so a soft read doesn't quietly become the number you bid.",
-    gradient: "from-violet to-purple",
-  },
-  {
-    icon: FileStack,
-    title: "Evidence on every line",
-    description:
-      "Every proposed measurement carries its source sheet as evidence. Nothing enters the estimate without a sheet behind it and a rule that produced it — so every number is defensible after the bid is submitted.",
-    gradient: "from-cyan to-blue-500",
-  },
-  {
-    icon: Ruler,
-    title: "AI proposes, the math is deterministic",
-    description:
-      "Counts, lengths, areas, spacing, and weights are calculated by versioned deterministic rules — rebar laps or glazing perimeters, same discipline. A language model proposes what it sees on the sheet; it never gets to invent the final number.",
-    gradient: "from-pink to-rose-500",
-  },
-  {
-    icon: ClipboardCheck,
-    title: "A review workspace for estimators",
-    description:
-      "Scroll the plan set, approve or edit every extracted element, flag open questions, and acknowledge sheets with nothing in scope on them — with a complete, append-only audit trail behind every action.",
-    gradient: "from-emerald-400 to-teal-500",
-  },
-  {
-    icon: Scale,
-    title: "Run it against your own estimate",
-    description:
-      "Point it at an estimate you already have and it works as a second takeoff — flagging disagreements both ways, where the plan reads light and where it reads heavy, so a wrong number gets caught before it's priced instead of after.",
-    gradient: "from-amber-400 to-orange-500",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Every miss becomes a rule",
-    description:
-      "Corrections don't stay one-offs. Each miss becomes a documented, versioned rule the whole system inherits — so it gets stricter and more specific with every job instead of accumulating exceptions nobody remembers.",
-    gradient: "from-fuchsia-500 to-violet",
-  },
-];
 
-const processSteps: {
-  number: string;
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  gradient: string;
-}[] = [
-  {
-    number: "01",
-    icon: Upload,
-    title: "Upload the plan set",
-    description:
-      "Drop in the PDF drawings and the scope. The plans are pre-processed — text and geometry extracted from every sheet — before anything is measured.",
-    gradient: "from-violet to-purple",
-  },
-  {
-    number: "02",
-    icon: Lock,
-    title: "Two AI estimators run independently",
-    description:
-      "Each produces a complete takeoff and estimate on its own, then the two are cross-checked against each other — and against your existing estimate when you bring one — with every disagreement flagged for review.",
-    gradient: "from-cyan to-blue-500",
-  },
-  {
-    number: "03",
-    icon: Eye,
-    title: "An estimator reviews every element",
-    description:
-      "In the review workspace, a human approves, edits, or flags each extracted element — every one linked to the sheet it came from — with an audit trail capturing the decision.",
-    gradient: "from-pink to-rose-500",
-  },
-  {
-    number: "04",
-    icon: FileSpreadsheet,
-    title: "Export a defensible estimate",
-    description:
-      "Quantities, lengths, and weights come out the far end — each traceable back to a source sheet and the versioned rule that produced it.",
-    gradient: "from-emerald-400 to-teal-500",
-  },
-];
 
 const comparisons: {
   category: string;
@@ -266,19 +168,7 @@ const faqs: { id: string; question: string; answer: string }[] = [
   },
 ];
 
-const containerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
-};
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
-  },
-};
 
 const toneStyles: Record<string, string> = {
   active: "bg-emerald-500/10 text-emerald-400",
@@ -348,10 +238,10 @@ export default function TakeoffPage() {
               <div className="absolute inset-0 bg-gradient-to-r from-purple to-cyan opacity-0 transition-opacity group-hover:opacity-100" />
             </a>
             <Link
-              href="#how"
+              href="#workspace"
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-8 py-4 text-base font-semibold text-white/80 transition-all hover:border-white/20 hover:text-white"
             >
-              See how it works
+              See the deliverable
             </Link>
           </motion.div>
 
@@ -403,239 +293,6 @@ export default function TakeoffPage() {
           ))}
         </div>
       </motion.section>
-
-      {/* ── Differentiators ──────────────────────────────────────── */}
-      <section id="how" className="relative px-6 py-24">
-        <div className="pointer-events-none absolute left-0 top-1/4 h-[600px] w-[600px] rounded-full bg-violet/5 blur-[128px]" />
-        <div className="pointer-events-none absolute bottom-1/4 right-0 h-[500px] w-[500px] rounded-full bg-cyan/5 blur-[128px]" />
-        <div className="relative z-10 mx-auto max-w-7xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="mb-16 text-center"
-          >
-            <span className="mb-4 inline-block text-sm font-medium uppercase tracking-widest text-violet-400">
-              Why it&apos;s built this way
-            </span>
-            <h2
-              className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl"
-              style={{ fontFamily: "var(--font-space-grotesk)" }}
-            >
-              Fast <span className="gradient-text">without losing</span> the
-              defensibility
-            </h2>
-            <p className="mx-auto max-w-3xl text-lg leading-relaxed text-white/50">
-              An estimate has to survive scrutiny after the bid. So the speed
-              comes from AI reading the sheets — and the trust comes from rules,
-              evidence, and a human who has the final say.
-            </p>
-          </motion.div>
-
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-          >
-            {differentiators.map((item) => {
-              const Icon = item.icon;
-              return (
-                <motion.div
-                  key={item.title}
-                  variants={cardVariants}
-                  className="glass-card group relative overflow-hidden rounded-2xl p-8"
-                >
-                  <div
-                    className={`mb-5 inline-flex rounded-xl bg-gradient-to-br ${item.gradient} p-3`}
-                  >
-                    <Icon size={22} className="text-white" />
-                  </div>
-                  <h3 className="mb-3 text-lg font-semibold text-white">
-                    {item.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-white/50">
-                    {item.description}
-                  </p>
-                  <div
-                    className={`pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-br ${item.gradient} opacity-0 blur-xl transition-opacity group-hover:opacity-[0.07]`}
-                  />
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── Process ──────────────────────────────────────────────── */}
-      <section id="process" className="relative px-6 py-16">
-        <div className="pointer-events-none absolute left-0 top-1/3 h-[400px] w-[400px] rounded-full bg-pink/5 blur-[128px]" />
-        <div className="relative z-10 mx-auto max-w-7xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="mb-20 text-center"
-          >
-            <span className="mb-4 inline-block text-sm font-medium uppercase tracking-widest text-pink-400">
-              How it runs
-            </span>
-            <h2
-              className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl"
-              style={{ fontFamily: "var(--font-space-grotesk)" }}
-            >
-              Plan set in.{" "}
-              <span className="gradient-text">Defensible estimate out.</span>
-            </h2>
-            <p className="mx-auto max-w-2xl text-lg text-white/50">
-              Four steps, with a human in the middle of the two that matter
-              most.
-            </p>
-          </motion.div>
-
-          <div className="relative mx-auto max-w-4xl">
-            <div className="absolute left-8 top-0 hidden h-full w-px bg-gradient-to-b from-violet/50 via-cyan/50 to-pink/50 md:left-1/2 md:block" />
-            <div className="space-y-16">
-              {processSteps.map((step, idx) => {
-                const StepIcon = step.icon;
-                return (
-                  <motion.div
-                    key={step.number}
-                    initial={{ opacity: 0, x: idx % 2 === 0 ? -40 : 40 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{
-                      duration: 0.7,
-                      delay: idx * 0.1,
-                      ease: [0.22, 1, 0.36, 1],
-                    }}
-                    className={`relative flex flex-col items-start gap-6 md:flex-row md:items-center ${
-                      idx % 2 === 1 ? "md:flex-row-reverse" : ""
-                    }`}
-                  >
-                    <div
-                      className={`glass-card flex-1 rounded-2xl p-8 ${
-                        idx % 2 === 1 ? "md:text-right" : ""
-                      }`}
-                    >
-                      <span
-                        className={`mb-4 inline-block bg-gradient-to-r ${step.gradient} bg-clip-text text-5xl font-bold text-transparent opacity-30`}
-                      >
-                        {step.number}
-                      </span>
-                      <h3 className="mb-3 text-2xl font-bold text-white">
-                        {step.title}
-                      </h3>
-                      <p className="text-base text-white/50">
-                        {step.description}
-                      </p>
-                    </div>
-                    <div className="z-10 hidden flex-shrink-0 md:block">
-                      <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br ${step.gradient} shadow-lg`}
-                      >
-                        <StepIcon size={20} className="text-white" />
-                      </div>
-                    </div>
-                    <div className="hidden flex-1 md:block" />
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-
-          <p className="mx-auto mt-14 max-w-xl text-center text-sm text-white/30">
-            Every quantity comes out the far end traceable to a source sheet
-            and the versioned rule that produced it.
-          </p>
-        </div>
-      </section>
-
-      {/* ── Proof / what it catches ──────────────────────────────── */}
-      <section id="proof" className="relative px-6 py-24">
-        <div className="pointer-events-none absolute right-0 top-1/4 h-[500px] w-[500px] rounded-full bg-amber-500/5 blur-[128px]" />
-        <div className="relative z-10 mx-auto max-w-5xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="mb-14 text-center"
-          >
-            <span className="mb-4 inline-block text-sm font-medium uppercase tracking-widest text-amber-400">
-              What it catches
-            </span>
-            <h2
-              className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl"
-              style={{ fontFamily: "var(--font-space-grotesk)" }}
-            >
-              The kind of miss that{" "}
-              <span className="gradient-text">loses the bid</span>
-            </h2>
-            <p className="mx-auto max-w-2xl text-lg text-white/50">
-              A single mis-keyed dimension can quietly load thousands of pounds
-              of steel into an estimate. Run as a second takeoff, it gets
-              flagged before the number is priced.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6 }}
-            className="glass-card overflow-hidden rounded-3xl p-8 sm:p-12"
-          >
-            <div className="grid items-center gap-10 md:grid-cols-[auto_1fr]">
-              <div className="text-center md:text-left">
-                <div className="mb-4 inline-flex rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 p-3">
-                  <AlertTriangle size={22} className="text-white" />
-                </div>
-                <p
-                  className="gradient-text text-6xl font-bold leading-none sm:text-7xl"
-                  style={{ fontFamily: "var(--font-space-grotesk)" }}
-                >
-                  ~19,000 lb
-                </p>
-                <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/50">
-                  of phantom steel on a single assembly — a wall dimension
-                  keyed at roughly ten times its real length. Flagged before
-                  the bid was priced.
-                </p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3 md:border-l md:border-white/[0.06] md:pl-10">
-                {[
-                  { value: "1", label: "Confirmed finding on the review" },
-                  { value: "0", label: "False claims in the deliverable" },
-                  { value: "Same-day", label: "Turnaround, plan set to report" },
-                ].map((s) => (
-                  <div
-                    key={s.label}
-                    className="rounded-2xl border border-white/8 bg-white/[0.02] p-5 text-center sm:text-left"
-                  >
-                    <p
-                      className="gradient-text text-2xl font-bold sm:text-3xl"
-                      style={{ fontFamily: "var(--font-space-grotesk)" }}
-                    >
-                      {s.value}
-                    </p>
-                    <p className="mt-1 text-xs leading-snug text-white/45">
-                      {s.label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <p className="mt-8 border-t border-white/[0.06] pt-6 text-[11px] italic text-white/25">
-              From a real review. Job details anonymized — the system reconstructed
-              the correct quantity to the pound.
-            </p>
-          </motion.div>
-        </div>
-      </section>
 
       {/* ── Workspace showcase (placeholder mockups) ─────────────── */}
       <section id="workspace" className="relative overflow-hidden px-6 py-24">
