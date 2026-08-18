@@ -6,8 +6,6 @@ import {
   ArrowRight,
   Check,
   X,
-  Building2,
-  Boxes,
   ChevronDown,
   Eye,
   AlertTriangle,
@@ -87,33 +85,12 @@ const comparisons: {
   },
 ];
 
-const featuredTrades: {
-  icon: LucideIcon;
-  name: string;
-  status: string;
-  statusTone: "active" | "progress";
-  note: string;
-}[] = [
-  {
-    icon: Boxes,
-    name: "Rebar & concrete accessories",
-    status: "Live",
-    statusTone: "active",
-    note: "The origin trade — every quantity traced to the sheet it came from and the rule behind it.",
-  },
-  {
-    icon: Building2,
-    name: "Glazing & glass",
-    status: "Rolling out",
-    statusTone: "progress",
-    note: "The same engine, instantiated for a second trade — new rulebook, same discipline.",
-  },
-];
 
-// The method underneath is trade-agnostic — these are a rulebook away,
-// built to order for a specific estimator's shop.
-const moreTrades: string[] = [
+// One trade-agnostic engine; each trade brings its own rulebook.
+const supportedTrades: string[] = [
+  "Rebar & concrete accessories",
   "Structural steel",
+  "Glazing & glass",
   "HVAC & mechanical",
   "Plumbing & piping",
   "Electrical",
@@ -170,11 +147,6 @@ const faqs: { id: string; question: string; answer: string }[] = [
 
 
 
-const toneStyles: Record<string, string> = {
-  active: "bg-emerald-500/10 text-emerald-400",
-  progress: "bg-amber-500/10 text-amber-400",
-  roadmap: "bg-white/[0.06] text-white/50",
-};
 
 export default function TakeoffPage() {
   return (
@@ -435,52 +407,19 @@ export default function TakeoffPage() {
               className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl"
               style={{ fontFamily: "var(--font-space-grotesk)" }}
             >
-              Rebar first,{" "}
-              <span className="gradient-text">built to travel</span>
+              Every trade that{" "}
+              <span className="gradient-text">works off a plan set</span>
             </h2>
             <p className="mx-auto max-w-2xl text-lg text-white/50">
-              We go deep on one trade at a time. The engine underneath — plan
-              pre-processing, a rules registry, the review workspace, the audit
-              trail — is trade-agnostic, so a new trade is a rulebook, not a
-              rewrite.
+              Rebar, structural steel, glazing, mechanical, electrical — if
+              it&apos;s counted and measured off a drawing set, the engine takes
+              it off. Plan pre-processing, the rules registry, the review
+              workspace, and the audit trail stay the same; each trade brings
+              its own rulebook.
             </p>
           </motion.div>
 
-          {/* Featured trades */}
-          <div className="mb-10 grid gap-6 md:grid-cols-2">
-            {featuredTrades.map((trade, idx) => {
-              const Icon = trade.icon;
-              return (
-                <motion.div
-                  key={trade.name}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-50px" }}
-                  transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  className="glass-card rounded-2xl p-8"
-                >
-                  <div className="mb-5 flex items-center justify-between">
-                    <div className="inline-flex rounded-xl bg-white/[0.05] p-3">
-                      <Icon size={22} className="text-white/80" />
-                    </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${toneStyles[trade.statusTone]}`}
-                    >
-                      {trade.status}
-                    </span>
-                  </div>
-                  <h3 className="mb-2 text-lg font-semibold text-white">
-                    {trade.name}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-white/50">
-                    {trade.note}
-                  </p>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* Build-on-request grid */}
+          {/* Trades grid */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -490,14 +429,14 @@ export default function TakeoffPage() {
           >
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm font-semibold text-white">
-                Built on request
+                Trades the engine handles
               </p>
               <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/50">
-                Scoped to your shop
+                One trade-agnostic core
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {moreTrades.map((trade) => (
+              {supportedTrades.map((trade) => (
                 <div
                   key={trade}
                   className="flex items-center gap-2.5 rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3"
