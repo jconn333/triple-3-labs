@@ -1,7 +1,7 @@
 "use client";
 
 // Dev-only visual harness for the Command Center: renders the real view with
-// fixture data (mirroring the live book of business plus extra rows to test
+// fixture data (FAKE companies only — mirrors real data shapes, never real client names, to test
 // density at scale) so design can be iterated without an admin session.
 // Returns 404 outside development.
 
@@ -26,18 +26,18 @@ const FIXTURE: CommandResponse = {
   queue: [
     {
       severity: "crit",
-      action: "Set up Mast-Lepley Silo, Inc. billing",
+      action: "Set up Sample Silo Co. billing",
       why: "$2,498/mo agreed, no Stripe customer yet",
       accountId: "ml",
     },
     {
       severity: "crit",
-      action: "Follow up Ultimate Chiropractic",
+      action: "Follow up Demo Chiropractic",
       why: "2 docs out, 11 views, opened recently — no deal in pipeline",
     },
     {
       severity: "warn",
-      action: "Kick off Mast-Lepley Silo, Inc.",
+      action: "Kick off Sample Silo Co.",
       why: "2 recurring commitments not anchored — onboarding/access pending",
       accountId: "ml",
     },
@@ -45,9 +45,9 @@ const FIXTURE: CommandResponse = {
   clients: [
     {
       accountId: "ml",
-      name: "Mast-Lepley Silo, Inc.",
-      contactName: "Nathan Hudson",
-      contactEmail: "nhudson@mastlepley.com",
+      name: "Sample Silo Co.",
+      contactName: "Pat Example",
+      contactEmail: "pat@sample-silo.example",
       status: "onboarding",
       services: ["SEO Build", "Google Ads", "Chief of Staff"],
       mrr: 2498,
@@ -70,9 +70,9 @@ const FIXTURE: CommandResponse = {
     },
     {
       accountId: "es",
-      name: "Eco Seal Solutions",
-      contactName: "Mike Myers",
-      contactEmail: "mike@ecosealsolutions.com",
+      name: "Acme Sealing LLC",
+      contactName: "Sam Sample",
+      contactEmail: "sam@acme-sealing.example",
       status: "active",
       services: ["SEO Agent"],
       mrr: 499,
@@ -94,7 +94,7 @@ const FIXTURE: CommandResponse = {
     // density test rows
     {
       accountId: "d1",
-      name: "Berlin Gardens (example)",
+      name: "Garden Mfg (example)",
       contactName: "Ops team",
       contactEmail: null,
       status: "active",
@@ -110,7 +110,7 @@ const FIXTURE: CommandResponse = {
     },
     {
       accountId: "d2",
-      name: "Heartland Stairways (example)",
+      name: "Stairworks (example)",
       contactName: "Front office",
       contactEmail: null,
       status: "at_risk",
@@ -136,22 +136,22 @@ const FIXTURE: CommandResponse = {
     { name: "Lost", color: "zinc", order: 5, isClosed: true, count: 0 },
   ],
   deals: [
-    { id: "p1", name: "PAXIT — Website Rebuild + SEO Agent", company: "PAXIT", stage: "Prospecting", stageColor: "cyan", stageOrder: 1, isClosed: false, amount: null, description: "audit sent in Jeff's own email · Vercel concept live", views: 17, lastViewed: daysAgo(11), createdAt: daysAgo(15) },
-    { id: "p2", name: "Atwood Glass — Full Stack", company: "Atwood Glass, Inc.", stage: "Prospecting", stageColor: "cyan", stageOrder: 1, isClosed: false, amount: null, description: "audit + website mockup out · market wide open", views: 9, lastViewed: daysAgo(1), createdAt: daysAgo(24) },
-    { id: "p3", name: "Alpine Services — SEO Agent", company: "Alpine Services", stage: "Prospecting", stageColor: "cyan", stageOrder: 1, isClosed: false, amount: 1500, description: "audit + pitch sent Jul 22 · quiet since", views: 5, lastViewed: daysAgo(28), createdAt: daysAgo(28) },
+    { id: "p1", name: "DemoPharm — Website Rebuild + SEO Agent", company: "DemoPharm", stage: "Prospecting", stageColor: "cyan", stageOrder: 1, isClosed: false, amount: null, description: "audit sent · website concept live", views: 17, lastViewed: daysAgo(11), createdAt: daysAgo(15) },
+    { id: "p2", name: "Demo Glass — Full Stack", company: "Demo Glass, Inc.", stage: "Prospecting", stageColor: "cyan", stageOrder: 1, isClosed: false, amount: null, description: "audit + website mockup out · market wide open", views: 9, lastViewed: daysAgo(1), createdAt: daysAgo(24) },
+    { id: "p3", name: "Summit Services — SEO Agent", company: "Summit Services", stage: "Prospecting", stageColor: "cyan", stageOrder: 1, isClosed: false, amount: 1500, description: "audit + pitch sent Jul 22 · quiet since", views: 5, lastViewed: daysAgo(28), createdAt: daysAgo(28) },
     { id: "p4", name: "Contact-form test", company: null, stage: "New Lead", stageColor: "violet", stageOrder: 0, isClosed: false, amount: null, description: "Test real estate form", views: null, lastViewed: null, createdAt: daysAgo(113) },
-    { id: "p5", name: "Mast-Lepley — SEO Build + Google Ads", company: "Mast-Lepley Silo, Inc.", stage: "Won", stageColor: "emerald", stageOrder: 4, isClosed: true, amount: 2498, description: "closed Aug 19 → onboarding above", views: 19, lastViewed: daysAgo(5), createdAt: daysAgo(0) },
+    { id: "p5", name: "Sample Silo — SEO Build + Google Ads", company: "Sample Silo Co.", stage: "Won", stageColor: "emerald", stageOrder: 4, isClosed: true, amount: 2498, description: "closed recently → onboarding above", views: 19, lastViewed: daysAgo(5), createdAt: daysAgo(0) },
   ],
   prospects: [
-    { key: "ultimate-chiropractic.com", name: "Ultimate Chiropractic", domain: "ultimate-chiropractic.com", docs: 2, views: 11, lastViewed: daysAgo(0), hasDeal: false, viewedLast7d: true },
-    { key: "atwoodglass.net", name: "Atwood Glass", domain: "atwoodglass.net", docs: 2, views: 9, lastViewed: daysAgo(1), hasDeal: true, viewedLast7d: true },
-    { key: "mastlepley.com", name: "Mast-Lepley", domain: "mastlepley.com", docs: 3, views: 28, lastViewed: daysAgo(1), hasDeal: true, viewedLast7d: true },
-    { key: "39chiro.com", name: "39 Chiropractic & Rehabilitation", domain: "39chiro.com", docs: 1, views: 2, lastViewed: daysAgo(2), hasDeal: false, viewedLast7d: false },
-    { key: "woolmarket", name: "The Woolmarket Inn at Stiglets' Landing", domain: null, docs: 3, views: 1, lastViewed: daysAgo(2), hasDeal: false, viewedLast7d: false },
-    { key: "paxit.com", name: "PAXIT", domain: "paxit.com", docs: 2, views: 18, lastViewed: daysAgo(11), hasDeal: true, viewedLast7d: false },
-    { key: "dcaroofing.com", name: "DCA Commercial Roofing", domain: "dcaroofing.com", docs: 1, views: 8, lastViewed: daysAgo(20), hasDeal: false, viewedLast7d: false },
-    { key: "tuscsupply.com", name: "TUSC Construction Supply", domain: "tuscsupply.com", docs: 1, views: 4, lastViewed: daysAgo(14), hasDeal: false, viewedLast7d: false },
-    { key: "alpine-services.com", name: "Alpine Services", domain: "alpine-services.com", docs: 1, views: 5, lastViewed: daysAgo(28), hasDeal: true, viewedLast7d: false },
+    { key: "demo-chiro.example", name: "Demo Chiropractic", domain: "demo-chiro.example", docs: 2, views: 11, lastViewed: daysAgo(0), hasDeal: false, viewedLast7d: true },
+    { key: "demo-glass.example", name: "Demo Glass", domain: "demo-glass.example", docs: 2, views: 9, lastViewed: daysAgo(1), hasDeal: true, viewedLast7d: true },
+    { key: "sample-silo.example", name: "Sample Silo", domain: "sample-silo.example", docs: 3, views: 28, lastViewed: daysAgo(1), hasDeal: true, viewedLast7d: true },
+    { key: "example-rehab.example", name: "Example Rehab Clinic", domain: "example-rehab.example", docs: 1, views: 2, lastViewed: daysAgo(2), hasDeal: false, viewedLast7d: false },
+    { key: "sample-inn", name: "The Sample Inn", domain: null, docs: 3, views: 1, lastViewed: daysAgo(2), hasDeal: false, viewedLast7d: false },
+    { key: "demopharm.example", name: "DemoPharm", domain: "demopharm.example", docs: 2, views: 18, lastViewed: daysAgo(11), hasDeal: true, viewedLast7d: false },
+    { key: "demo-roofing.example", name: "Demo Roofing Co", domain: "demo-roofing.example", docs: 1, views: 8, lastViewed: daysAgo(20), hasDeal: false, viewedLast7d: false },
+    { key: "sample-supply.example", name: "Sample Supply Co", domain: "sample-supply.example", docs: 1, views: 4, lastViewed: daysAgo(14), hasDeal: false, viewedLast7d: false },
+    { key: "summit-services.example", name: "Summit Services", domain: "summit-services.example", docs: 1, views: 5, lastViewed: daysAgo(28), hasDeal: true, viewedLast7d: false },
   ],
 };
 
