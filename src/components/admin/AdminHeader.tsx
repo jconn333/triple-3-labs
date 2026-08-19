@@ -3,7 +3,8 @@
 import { usePathname } from "next/navigation";
 
 const pageTitles: Record<string, string> = {
-  "/admin": "Dashboard",
+  "/admin": "Command Center",
+  "/admin/dashboard": "Dashboard",
   "/admin/command": "Command Center",
   "/admin/mission-control": "Mission Control",
   "/admin/tickets": "Tickets",
