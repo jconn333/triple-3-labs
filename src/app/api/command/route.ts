@@ -95,6 +95,9 @@ export interface CommandProspect {
   lastViewed: string | null;
   hasDeal: boolean;
   viewedLast7d: boolean;
+  dealId: string | null; // set when a pipeline deal references one of this prospect's reports
+  contactId: string | null;
+  reports: { title: string; url: string; views: number; lastViewed: string | null }[];
 }
 
 export interface CommandResponse {
@@ -318,10 +321,15 @@ export async function GET() {
   }));
 
   // ---------- prospects (grouped reports) ----------
-  const dealReportIds = new Set(deals.map((d) => d.prospect_report_id).filter(Boolean));
-  const linkedDealReportIds = new Set(
-    links.filter((l) => l.deal_id && l.prospect_report_id).map((l) => l.prospect_report_id),
-  );
+  // report id → the deal that references it (directly or via an attached link)
+  const dealByReportId = new Map<string, string>();
+  for (const d of deals) if (d.prospect_report_id) dealByReportId.set(d.prospect_report_id, d.id);
+  for (const l of links) {
+    if (l.deal_id && l.prospect_report_id && !dealByReportId.has(l.prospect_report_id)) {
+      dealByReportId.set(l.prospect_report_id, l.deal_id);
+    }
+  }
+  const dealContactById = new Map(deals.map((d) => [d.id, d.contact_id]));
   const groups = new Map<string, CommandProspect & { reportIds: string[] }>();
   for (const r of reports) {
     const key = (r.prospect_domain ?? r.prospect_name).toLowerCase();
@@ -336,6 +344,9 @@ export async function GET() {
         lastViewed: null,
         hasDeal: false,
         viewedLast7d: false,
+        dealId: null,
+        contactId: null,
+        reports: [],
         reportIds: [],
       } as CommandProspect & { reportIds: string[] });
     g.docs += 1;
@@ -343,12 +354,23 @@ export async function GET() {
     // keep the shortest name as the display name (drops "… Proposal"/"(package)")
     if (r.prospect_name.length < g.name.length) g.name = r.prospect_name;
     const v = viewsByReport.get(r.id);
+    g.reports.push({
+      title: r.title ?? r.prospect_name,
+      url: `https://triple3labs.io/r/${r.slug}`,
+      views: v?.count ?? 0,
+      lastViewed: v?.last ?? null,
+    });
     if (v) {
       g.views += v.count;
       if (!g.lastViewed || (v.last && v.last > g.lastViewed)) g.lastViewed = v.last;
       if (v.last && now - new Date(v.last).getTime() < 7 * DAY) g.viewedLast7d = true;
     }
-    if (dealReportIds.has(r.id) || linkedDealReportIds.has(r.id)) g.hasDeal = true;
+    const dealId = dealByReportId.get(r.id);
+    if (dealId) {
+      g.hasDeal = true;
+      g.dealId = g.dealId ?? dealId;
+      g.contactId = g.contactId ?? dealContactById.get(dealId) ?? null;
+    }
     groups.set(key, g);
   }
   const prospects: CommandProspect[] = [...groups.values()]

@@ -246,15 +246,24 @@ function ClientRows({ clients, queue }: { clients: CommandClient[]; queue: Queue
             return (
               <div key={c.accountId}>
                 {/* row line */}
-                <button
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => toggle(c.accountId)}
+                  onKeyDown={(e) => e.key === "Enter" && toggle(c.accountId)}
                   className={cn(
-                    "grid w-full grid-cols-[minmax(0,1fr)_auto_auto_20px] items-center gap-2.5 px-4 py-2 text-left hover:bg-white/[0.04] md:grid-cols-[1.5fr_92px_1.25fr_110px_1.6fr_88px_20px]",
+                    "grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto_20px] items-center gap-2.5 px-4 py-2 text-left hover:bg-white/[0.04] md:grid-cols-[1.5fr_92px_1.25fr_110px_1.6fr_88px_20px]",
                     isOpen && "bg-white/[0.04]",
                   )}
                 >
                   <span className="flex min-w-0 items-baseline gap-2 overflow-hidden whitespace-nowrap">
-                    <span className="flex-none text-[13px] font-semibold text-white">{c.name}</span>
+                    <Link
+                      href={`/admin/accounts/${c.accountId}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-none text-[13px] font-semibold text-white hover:text-violet-300 hover:underline"
+                    >
+                      {c.name}
+                    </Link>
                     <span className="hidden truncate text-[11px] text-white/35 md:inline">{c.contactName}</span>
                   </span>
                   <span
@@ -298,7 +307,7 @@ function ClientRows({ clients, queue }: { clients: CommandClient[]; queue: Queue
                     size={13}
                     className={cn("text-white/30 transition-transform", isOpen && "rotate-90")}
                   />
-                </button>
+                </div>
 
                 {/* expanded */}
                 {isOpen && (
@@ -449,14 +458,27 @@ function Pipeline({ stages, deals }: { stages: CommandStage[]; deals: CommandDea
             const isOpen = openIds.has(d.id);
             return (
               <div key={d.id}>
-                <button
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => toggle(d.id)}
+                  onKeyDown={(e) => e.key === "Enter" && toggle(d.id)}
                   className={cn(
-                    "grid w-full grid-cols-[minmax(0,1fr)_auto_auto_18px] items-center gap-2.5 px-4 py-2 text-left text-[13px] hover:bg-white/[0.04] md:grid-cols-[1.4fr_110px_1fr_110px_96px_18px]",
+                    "grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto_18px] items-center gap-2.5 px-4 py-2 text-left text-[13px] hover:bg-white/[0.04] md:grid-cols-[1.4fr_110px_1fr_110px_96px_18px]",
                     isOpen && "bg-white/[0.04]",
                   )}
                 >
-                  <span className="truncate font-medium text-white">{d.name}</span>
+                  {d.accountId || d.contactId ? (
+                    <Link
+                      href={d.accountId ? `/admin/accounts/${d.accountId}` : `/admin/contacts/${d.contactId}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="truncate font-medium text-white hover:text-violet-300 hover:underline"
+                    >
+                      {d.name}
+                    </Link>
+                  ) : (
+                    <span className="truncate font-medium text-white">{d.name}</span>
+                  )}
                   <span
                     className={cn(
                       "w-fit whitespace-nowrap rounded-full px-2 py-0.5 text-center text-[10px] font-medium uppercase tracking-wide",
@@ -480,7 +502,7 @@ function Pipeline({ stages, deals }: { stages: CommandStage[]; deals: CommandDea
                     {d.views !== null ? `${d.views} views · ${relTime(d.lastViewed)}` : "—"}
                   </span>
                   <ChevronRight size={13} className={cn("text-white/30 transition-transform", isOpen && "rotate-90")} />
-                </button>
+                </div>
                 {isOpen && (
                   <div className="grid grid-cols-1 gap-0 border-t border-dashed border-white/10 bg-white/[0.02] md:grid-cols-[1.2fr_1fr] md:divide-x md:divide-white/5">
                     <div className="px-5 py-4">
@@ -552,7 +574,15 @@ function Pipeline({ stages, deals }: { stages: CommandStage[]; deals: CommandDea
 
 function Prospects({ prospects }: { prospects: CommandProspect[] }) {
   const [showAll, setShowAll] = useState(false);
+  const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
   const list = showAll ? prospects : prospects.slice(0, 8);
+  const toggle = (key: string) =>
+    setOpenKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   return (
     <section>
       <div className="mb-2.5 flex items-center gap-3">
@@ -572,32 +602,82 @@ function Prospects({ prospects }: { prospects: CommandProspect[] }) {
       </div>
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
         <div className="divide-y divide-white/5">
-          {list.map((p) => (
-            <div key={p.key} className="flex items-center gap-3 px-4 py-2">
-              <span
-                className={cn(
-                  "w-9 flex-none rounded-md py-0.5 text-center text-xs font-semibold tabular-nums",
-                  p.viewedLast7d ? "bg-red-400/10 text-red-300" : "bg-white/5 text-white/50",
-                )}
-              >
-                {p.views}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[13px] font-medium text-white">{p.name}</div>
-                <div className="truncate text-[11px] text-white/35">
-                  {p.docs} doc{p.docs > 1 ? "s" : ""} out · last opened {relTime(p.lastViewed)}
+          {list.map((p) => {
+            const isOpen = openKeys.has(p.key);
+            return (
+              <div key={p.key}>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => toggle(p.key)}
+                  onKeyDown={(e) => e.key === "Enter" && toggle(p.key)}
+                  className={cn("flex cursor-pointer items-center gap-3 px-4 py-2 hover:bg-white/[0.04]", isOpen && "bg-white/[0.04]")}
+                >
+                  <span
+                    className={cn(
+                      "w-9 flex-none rounded-md py-0.5 text-center text-xs font-semibold tabular-nums",
+                      p.viewedLast7d ? "bg-red-400/10 text-red-300" : "bg-white/5 text-white/50",
+                    )}
+                  >
+                    {p.views}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    {p.contactId ? (
+                      <Link
+                        href={`/admin/contacts/${p.contactId}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="block truncate text-[13px] font-medium text-white hover:text-violet-300 hover:underline"
+                      >
+                        {p.name}
+                      </Link>
+                    ) : (
+                      <div className="truncate text-[13px] font-medium text-white">{p.name}</div>
+                    )}
+                    <div className="truncate text-[11px] text-white/35">
+                      {p.docs} doc{p.docs > 1 ? "s" : ""} out · last opened {relTime(p.lastViewed)}
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      "flex-none rounded-md px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+                      p.hasDeal ? "bg-emerald-400/10 text-emerald-300" : "bg-red-400/10 text-red-300",
+                    )}
+                  >
+                    {p.hasDeal ? "In pipe" : "No deal"}
+                  </span>
+                  <ChevronRight size={12} className={cn("flex-none text-white/30 transition-transform", isOpen && "rotate-90")} />
                 </div>
-              </div>
-              <span
-                className={cn(
-                  "flex-none rounded-md px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-                  p.hasDeal ? "bg-emerald-400/10 text-emerald-300" : "bg-red-400/10 text-red-300",
+                {isOpen && (
+                  <div className="border-t border-dashed border-white/10 bg-white/[0.02] px-5 py-3">
+                    <div className={cn(label, "mb-1.5")}>Docs sent</div>
+                    {p.reports.map((r) => (
+                      <a
+                        key={r.url}
+                        href={r.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-white/5"
+                      >
+                        <span className="min-w-0 flex-1 truncate text-xs text-white/80 group-hover:text-white">{r.title}</span>
+                        <span className="flex-none text-[10px] tabular-nums text-white/35">
+                          {r.views} views{r.lastViewed ? ` · ${relTime(r.lastViewed)}` : ""}
+                        </span>
+                        <ExternalLink size={11} className="flex-none text-white/25" />
+                      </a>
+                    ))}
+                    {p.contactId && (
+                      <Link
+                        href={`/admin/contacts/${p.contactId}`}
+                        className="mt-2 inline-block rounded-md bg-violet/10 px-2.5 py-1 text-[11px] font-medium text-violet hover:bg-violet/20"
+                      >
+                        Open contact →
+                      </Link>
+                    )}
+                  </div>
                 )}
-              >
-                {p.hasDeal ? "In pipe" : "No deal"}
-              </span>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
