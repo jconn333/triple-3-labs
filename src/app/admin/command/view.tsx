@@ -98,17 +98,29 @@ function KpiStrip({ kpis }: { kpis: CommandResponse["kpis"] }) {
 }
 
 function NeedsYou({ queue }: { queue: QueueItem[] }) {
+  const [open, setOpen] = useState(false);
   if (queue.length === 0) return null;
+  const crit = queue.filter((q) => q.severity === "crit").length;
   return (
     <div className="overflow-hidden rounded-xl border border-amber-400/30">
-      <div className="flex items-center gap-2 border-b border-white/10 bg-amber-400/[0.07] px-4 py-2.5">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "flex w-full items-center gap-2 bg-amber-400/[0.07] px-4 py-2.5 text-left hover:bg-amber-400/[0.12]",
+          open && "border-b border-white/10",
+        )}
+      >
         <Flag size={14} className="text-amber-300" />
         <h2 className="text-sm font-semibold text-white" style={heading}>
           Needs you
         </h2>
-        <span className="ml-auto text-xs tabular-nums text-amber-300/80">{queue.length} items</span>
-      </div>
-      <div className="divide-y divide-white/5">
+        <span className="ml-auto text-xs tabular-nums text-amber-300/80">
+          {queue.length} item{queue.length > 1 ? "s" : ""}
+          {crit > 0 && <span className="ml-2 text-red-300">{crit} urgent</span>}
+        </span>
+        <ChevronRight size={13} className={cn("text-amber-300/60 transition-transform", open && "rotate-90")} />
+      </button>
+      <div className={cn("divide-y divide-white/5", !open && "hidden")}>
         {queue.map((q, i) => (
           <div key={i} className="flex items-center gap-3 px-4 py-2.5">
             <span
@@ -382,7 +394,15 @@ function ClientRows({ clients, queue }: { clients: CommandClient[]; queue: Queue
 
 function Pipeline({ stages, deals }: { stages: CommandStage[]; deals: CommandDeal[] }) {
   const [showClosed, setShowClosed] = useState(false);
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set());
   const open = deals.filter((d) => (showClosed ? true : !d.isClosed || d.stage === "Won"));
+  const toggle = (id: string) =>
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const total = deals.length || 1;
   return (
     <section>
@@ -425,36 +445,105 @@ function Pipeline({ stages, deals }: { stages: CommandStage[]; deals: CommandDea
           ))}
         </div>
         <div className="divide-y divide-white/5 border-t border-white/5">
-          {open.map((d) => (
-            <div
-              key={d.id}
-              className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2.5 px-4 py-2 text-[13px] hover:bg-white/[0.04] md:grid-cols-[1.4fr_110px_1fr_110px_96px]"
-            >
-              <span className="truncate font-medium text-white">{d.name}</span>
-              <span
-                className={cn(
-                  "w-fit whitespace-nowrap rounded-full px-2 py-0.5 text-center text-[10px] font-medium uppercase tracking-wide",
-                  STAGE_TEXT[d.stageColor] ?? STAGE_TEXT.zinc,
+          {open.map((d) => {
+            const isOpen = openIds.has(d.id);
+            return (
+              <div key={d.id}>
+                <button
+                  onClick={() => toggle(d.id)}
+                  className={cn(
+                    "grid w-full grid-cols-[minmax(0,1fr)_auto_auto_18px] items-center gap-2.5 px-4 py-2 text-left text-[13px] hover:bg-white/[0.04] md:grid-cols-[1.4fr_110px_1fr_110px_96px_18px]",
+                    isOpen && "bg-white/[0.04]",
+                  )}
+                >
+                  <span className="truncate font-medium text-white">{d.name}</span>
+                  <span
+                    className={cn(
+                      "w-fit whitespace-nowrap rounded-full px-2 py-0.5 text-center text-[10px] font-medium uppercase tracking-wide",
+                      STAGE_TEXT[d.stageColor] ?? STAGE_TEXT.zinc,
+                    )}
+                  >
+                    {d.stage}
+                  </span>
+                  <span className="hidden truncate text-xs text-white/40 md:inline">{d.description ?? ""}</span>
+                  <span className="whitespace-nowrap text-right text-xs tabular-nums text-white/70">
+                    {d.amount ? `${money(d.amount)}` : "TBD"}
+                  </span>
+                  <span
+                    className={cn(
+                      "hidden whitespace-nowrap text-right text-[11px] tabular-nums md:inline",
+                      d.lastViewed && Date.now() - new Date(d.lastViewed).getTime() < 3 * 86_400_000
+                        ? "font-semibold text-red-300"
+                        : "text-white/40",
+                    )}
+                  >
+                    {d.views !== null ? `${d.views} views · ${relTime(d.lastViewed)}` : "—"}
+                  </span>
+                  <ChevronRight size={13} className={cn("text-white/30 transition-transform", isOpen && "rotate-90")} />
+                </button>
+                {isOpen && (
+                  <div className="grid grid-cols-1 gap-0 border-t border-dashed border-white/10 bg-white/[0.02] md:grid-cols-[1.2fr_1fr] md:divide-x md:divide-white/5">
+                    <div className="px-5 py-4">
+                      <div className={cn(label, "mb-2")}>Deal notes</div>
+                      <p className="whitespace-pre-wrap text-xs leading-relaxed text-white/60">
+                        {d.description ?? "No notes."}
+                      </p>
+                    </div>
+                    <div className="px-5 py-4">
+                      <div className={cn(label, "mb-2 flex justify-between")}>
+                        <span>Contact &amp; docs</span>
+                        <span>{d.links.length} link{d.links.length === 1 ? "" : "s"}</span>
+                      </div>
+                      <div className="mb-2 text-xs text-white/70">
+                        {d.contactName ?? "—"}
+                        {d.contactEmail && !d.contactEmail.endsWith(".invalid") && (
+                          <span className="ml-2 text-white/40">{d.contactEmail}</span>
+                        )}
+                      </div>
+                      {d.links.map((l) => (
+                        <a
+                          key={l.id}
+                          href={l.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="group flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-white/5"
+                        >
+                          <span className="w-16 flex-none rounded border border-white/10 bg-white/5 px-1 py-px text-center text-[9px] uppercase tracking-wide text-white/50">
+                            {LINK_KIND_LABEL[l.kind] ?? l.kind}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-xs text-white/80 group-hover:text-white">
+                            {l.title}
+                          </span>
+                          <span className="flex-none text-[10px] tabular-nums text-white/35">
+                            {l.views !== null ? `${l.views} views` : ""}
+                          </span>
+                          <ExternalLink size={11} className="flex-none text-white/25" />
+                        </a>
+                      ))}
+                      <div className="mt-2.5 flex gap-2">
+                        {d.accountId && (
+                          <Link
+                            href={`/admin/accounts/${d.accountId}`}
+                            className="rounded-md bg-violet/10 px-2.5 py-1 text-[11px] font-medium text-violet hover:bg-violet/20"
+                          >
+                            Open account →
+                          </Link>
+                        )}
+                        {d.contactId && (
+                          <Link
+                            href={`/admin/contacts/${d.contactId}`}
+                            className="rounded-md border border-white/10 px-2.5 py-1 text-[11px] text-white/60 hover:bg-white/5"
+                          >
+                            Open contact →
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
-              >
-                {d.stage}
-              </span>
-              <span className="hidden truncate text-xs text-white/40 md:inline">{d.description ?? ""}</span>
-              <span className="whitespace-nowrap text-right text-xs tabular-nums text-white/70">
-                {d.amount ? `${money(d.amount)}` : "TBD"}
-              </span>
-              <span
-                className={cn(
-                  "hidden whitespace-nowrap text-right text-[11px] tabular-nums md:inline",
-                  d.lastViewed && Date.now() - new Date(d.lastViewed).getTime() < 3 * 86_400_000
-                    ? "font-semibold text-red-300"
-                    : "text-white/40",
-                )}
-              >
-                {d.views !== null ? `${d.views} views · ${relTime(d.lastViewed)}` : "—"}
-              </span>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

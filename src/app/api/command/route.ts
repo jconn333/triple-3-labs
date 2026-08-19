@@ -62,6 +62,10 @@ export interface CommandDeal {
   id: string;
   name: string;
   company: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactId: string | null;
+  accountId: string | null; // set when the deal's contact has an account
   stage: string;
   stageColor: string;
   stageOrder: number;
@@ -71,6 +75,7 @@ export interface CommandDeal {
   views: number | null;
   lastViewed: string | null;
   createdAt: string;
+  links: CommandLink[];
 }
 
 export interface CommandStage {
@@ -266,14 +271,30 @@ export async function GET() {
 
   // ---------- pipeline ----------
   const stageById = new Map(stages.map((s) => [s.id, s]));
+  const accountByContact = new Map(accounts.map((a) => [a.contact_id, a.id]));
+  const linkToCommandLink = (l: (typeof links)[number]): CommandLink => {
+    const v = l.prospect_report_id ? viewsByReport.get(l.prospect_report_id) : undefined;
+    return {
+      id: l.id,
+      kind: l.kind,
+      title: l.title,
+      url: l.url,
+      views: l.prospect_report_id ? (v?.count ?? 0) : null,
+      lastViewed: v?.last ?? null,
+    };
+  };
   const commandDeals: CommandDeal[] = deals.map((d) => {
     const stage = stageById.get(d.stage_id);
     const v = d.prospect_report_id ? viewsByReport.get(d.prospect_report_id) : undefined;
-    const contact = d.contact as { company?: string; first_name?: string; last_name?: string } | null;
+    const contact = d.contact as { company?: string; first_name?: string; last_name?: string; email?: string } | null;
     return {
       id: d.id,
       name: d.name,
       company: contact?.company ?? null,
+      contactName: contact ? `${contact.first_name ?? ""} ${contact.last_name ?? ""}`.trim() || null : null,
+      contactEmail: contact?.email ?? null,
+      contactId: d.contact_id ?? null,
+      accountId: accountByContact.get(d.contact_id) ?? null,
       stage: stage?.name ?? "Unknown",
       stageColor: stage?.color ?? "zinc",
       stageOrder: stage?.display_order ?? 99,
@@ -283,6 +304,7 @@ export async function GET() {
       views: d.prospect_report_id ? (v?.count ?? 0) : null,
       lastViewed: v?.last ?? null,
       createdAt: d.created_at,
+      links: links.filter((l) => l.deal_id === d.id).map(linkToCommandLink),
     };
   });
   commandDeals.sort((a, b) => a.stageOrder - b.stageOrder || (b.views ?? 0) - (a.views ?? 0));
