@@ -209,6 +209,11 @@ switch (cmd) {
     const company = pos.join(" ");
     if (!company) die('Usage: add-prospect <company> [--contact "First Last"] [--email x] [--phone x] [--deal "Name"] [--amount n] [--stage prospecting] [--note "..."]');
     const [first = "", ...restName] = (flags.contact ?? "").split(" ");
+    // contacts.email is NOT NULL; unknown emails use the existing `.invalid`
+    // placeholder convention (see PAXIT) so they can never be mailed by accident.
+    const placeholderEmail = `${(first || company).toLowerCase().replace(/[^a-z0-9]+/g, "")}@${company
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")}.invalid`;
     const contact = await q(
       db
         .from("contacts")
@@ -216,7 +221,7 @@ switch (cmd) {
           first_name: first || company,
           last_name: restName.join(" "),
           company,
-          email: flags.email ?? null,
+          email: flags.email ?? placeholderEmail,
           phone: flags.phone ?? null,
           source: "prospecting",
           message: flags.note ?? null,
