@@ -14,10 +14,12 @@ import {
   FileText,
   Ticket,
   Radar,
+  Compass,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 const navItems = [
+  { label: "Command Center", href: "/admin/command", icon: Compass },
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Mission Control", href: "/admin/mission-control", icon: Radar },
   { label: "Pipeline", href: "/admin/pipeline", icon: Kanban },
