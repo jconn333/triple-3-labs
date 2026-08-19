@@ -2,9 +2,14 @@
 // t3-private-brief.mjs — Jeff-only Triple 3 Labs morning brief.
 //
 // PRIVACY: this brief contains CRM data (clients, revenue, prospects) and must
-// only ever post to a Jeff-only channel. It reads PINGO_BRIDGE_CHANNEL_ID from
-// ~/.pingo-claude-bridge/env — the private #claude-code channel (Jeff + Zeke).
-// It shares NO plumbing with the multi-recipient 7am portfolio brief, by design.
+// only ever post to a Jeff-only channel. It posts to the private #triple-3-labs
+// Pingo channel (Jeff + Zeke bot only), reusing only the API credentials from
+// ~/.pingo-claude-bridge/env. It shares NO plumbing with the multi-recipient
+// 7am portfolio brief, by design.
+//
+// If a fresh agent sweep exists (.t3-sweep.json from t3-agent-sweep.mjs, run
+// 30 min earlier), an Agents section is included: health, last task, canaries,
+// last client communication.
 //
 // Deterministic by design: composed straight from CRM SQL, no LLM in the loop.
 //
@@ -36,6 +41,10 @@ function loadEnv(path) {
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const crmEnv = loadEnv(join(repoRoot, ".env.local"));
 const pingoEnv = loadEnv(join(homedir(), ".pingo-claude-bridge", "env"));
+
+// Private #triple-3-labs channel (Jeff + Zeke bot only) — channel ids are not
+// secrets; membership is the access control. Overridable via PINGO_T3_CHANNEL_ID.
+const T3_CHANNEL_ID = crmEnv.PINGO_T3_CHANNEL_ID ?? "6236d661-702b-47c6-b89a-6ae453b5ee8e";
 
 const db = createClient(crmEnv.NEXT_PUBLIC_SUPABASE_URL, crmEnv.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
@@ -109,6 +118,15 @@ const dueSoon = commitments
   .sort((a, b) => a.next_due.localeCompare(b.next_due))
   .map((c) => `${accountById.get(c.account_id)?.name ?? "?"}: ${c.name} (${c.next_due})`);
 
+// ---------- agent sweep (written by t3-agent-sweep.mjs ~30 min earlier) ----------
+let sweep = null;
+try {
+  const raw = JSON.parse(readFileSync(join(repoRoot, ".t3-sweep.json"), "utf8"));
+  if (now.getTime() - new Date(raw.sweptAt).getTime() < 3 * 60 * 60 * 1000) sweep = raw;
+} catch {
+  /* no sweep file — section is skipped with a note */
+}
+
 // ---------- compose ----------
 const dateLabel = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 const lines = [
@@ -119,6 +137,25 @@ const lines = [
 if (needs.length) {
   lines.push(`⚑ Needs you (${needs.length})`);
   for (const n of needs) lines.push(`  • ${n}`);
+  lines.push("");
+}
+if (sweep) {
+  const bad = sweep.agents.filter((a) => !a.ok);
+  lines.push(`🤖 Agents (${sweep.agents.length - bad.length}/${sweep.agents.length} healthy · swept ${new Date(sweep.sweptAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })})`);
+  for (const a of sweep.agents) {
+    const bits = [a.ok ? "✅" : "🔴", `${a.name}`];
+    const detail = [];
+    if (a.lastTask) detail.push(a.lastTask);
+    else detail.push(`beat ${a.heartbeatAgo}`);
+    if (a.canaries) detail.push(`canaries ${a.canaries}`);
+    if (a.errors24h > 0) detail.push(`${a.errors24h} errors 24h`);
+    lines.push(`  ${bits.join(" ")} — ${detail.join(" · ")}`);
+    if (a.clientFacing) lines.push(`      ↳ last client touch: ${a.lastClientTouch}`);
+    for (const p of a.problems) lines.push(`      ⚠ ${p}`);
+  }
+  lines.push("");
+} else {
+  lines.push("🤖 Agents: no fresh sweep available (t3-agent-sweep did not run)");
   lines.push("");
 }
 if (readLines.length) {
@@ -148,7 +185,7 @@ if (DRY) {
   process.exit(0);
 }
 
-const channelId = pingoEnv.PINGO_BRIDGE_CHANNEL_ID; // private #claude-code (Jeff + Zeke only)
+const channelId = T3_CHANNEL_ID; // private #triple-3-labs (Jeff + Zeke only)
 if (!channelId || !pingoEnv.PINGO_API_URL || !pingoEnv.PINGO_API_KEY) {
   console.error("Missing Pingo bridge env — not sending.");
   process.exit(1);
@@ -166,4 +203,4 @@ if (!res.ok) {
   console.error(`Pingo send failed: HTTP ${res.status} ${await res.text()}`);
   process.exit(1);
 }
-console.log(`✓ Private brief sent to #claude-code (${today}${TEST ? ", test key" : ""})`);
+console.log(`✓ Private brief sent to #triple-3-labs (${today}${TEST ? ", test key" : ""})`);

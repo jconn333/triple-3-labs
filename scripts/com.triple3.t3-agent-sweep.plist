@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.triple3.t3-agent-sweep</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/jeffconn/.nvm/versions/node/v24.13.0/bin/node</string>
+    <string>/Users/jeffconn/Dev/triple_3_labs/scripts/t3-agent-sweep.mjs</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>6</integer>
+    <key>Minute</key><integer>45</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/Users/jeffconn/Library/Logs/t3-agent-sweep.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/jeffconn/Library/Logs/t3-agent-sweep.log</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key><string>/Users/jeffconn</string>
+    <key>PATH</key><string>/Users/jeffconn/.nvm/versions/node/v24.13.0/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+</dict>
+</plist>
