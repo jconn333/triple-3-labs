@@ -588,16 +588,25 @@ export default function AccountDetailPage() {
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40">Subscriptions</h3>
               <div className="flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-                    account.setup_fee_paid_at
-                      ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-                      : "text-amber-400 bg-amber-500/10 border-amber-500/20"
-                  }`}
-                  title={account.setup_fee_paid_at ? `Paid ${formatDate(account.setup_fee_paid_at)}` : "Awaiting implementation-fee payment"}
-                >
-                  {account.setup_fee_paid_at ? "Setup fee paid" : "Setup fee unpaid"}
-                </span>
+                {!account.setup_fee_cents ? (
+                  <span
+                    className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/40"
+                    title="No implementation fee configured for this account"
+                  >
+                    No setup fee
+                  </span>
+                ) : (
+                  <span
+                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                      account.setup_fee_paid_at
+                        ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                        : "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                    }`}
+                    title={account.setup_fee_paid_at ? `Paid ${formatDate(account.setup_fee_paid_at)}` : "Awaiting implementation-fee payment"}
+                  >
+                    {account.setup_fee_paid_at ? "Setup fee paid" : "Setup fee unpaid"}
+                  </span>
+                )}
                 {account.setup_fee_paid_at &&
                   account.stripe_customer_id &&
                   !subsLoading &&

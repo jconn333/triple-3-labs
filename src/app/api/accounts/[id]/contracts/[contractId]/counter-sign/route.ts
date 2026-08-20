@@ -165,7 +165,7 @@ export async function POST(
 
     const { data: account } = await supabase
       .from("accounts")
-      .select("contact_id, name, setup_fee_paid_at")
+      .select("contact_id, name, setup_fee_paid_at, setup_fee_cents")
       .eq("id", accountId)
       .single();
     if (account) {
@@ -194,7 +194,8 @@ export async function POST(
       if (clientSig) {
         const signedBytes = result.signedBytes;
         const contractTitle = contract.title;
-        const wantsPayment = Boolean(account && !account.setup_fee_paid_at);
+        const setupFeeCents = account?.setup_fee_cents ?? 0;
+        const wantsPayment = Boolean(account && setupFeeCents > 0 && !account.setup_fee_paid_at);
         const accountName = account?.name ?? "";
         after(async () => {
           try {
@@ -205,6 +206,7 @@ export async function POST(
                   accountId,
                   contractId,
                   accountName,
+                  setupFeeCents,
                 });
               } catch (err) {
                 console.error("Setup-fee link creation failed (email sent without):", err);

@@ -208,7 +208,7 @@ export async function POST(
 
     const { data: account } = await admin
       .from("accounts")
-      .select("contact_id, name, setup_fee_paid_at")
+      .select("contact_id, name, setup_fee_paid_at, setup_fee_cents")
       .eq("id", sigRequest.account_id)
       .single();
     if (account) {
@@ -224,9 +224,11 @@ export async function POST(
       });
     }
 
-    // 5. A fully executed contract with an unpaid setup fee gets payment links —
-    // created before we respond, so the confirmation screen can show them too.
-    const wantsPayment = fullyExecuted && account && !account.setup_fee_paid_at;
+    // 5. A fully executed contract with a real, unpaid setup fee gets payment
+    // links — created before we respond, so the confirmation screen can show
+    // them too. Accounts with no configured fee (null/0) get nothing charged.
+    const setupFeeCents = account?.setup_fee_cents ?? 0;
+    const wantsPayment = fullyExecuted && account && setupFeeCents > 0 && !account.setup_fee_paid_at;
     let payment: { achUrl: string; cardUrl: string } | undefined;
     if (wantsPayment) {
       try {
@@ -234,6 +236,7 @@ export async function POST(
           accountId: sigRequest.account_id,
           contractId: sigRequest.contract_id,
           accountName: account.name,
+          setupFeeCents,
         });
       } catch (err) {
         console.error("Setup-fee link creation failed (continuing without):", err);

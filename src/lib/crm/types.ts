@@ -77,6 +77,8 @@ export interface Account {
   status: AccountStatus;
   stripe_customer_id: string | null;
   notes: string | null;
+  mrr?: number | null;
+  setup_fee_cents?: number | null;
   setup_fee_paid_at?: string | null;
   setup_fee_payment_intent?: string | null;
   created_at: string;
