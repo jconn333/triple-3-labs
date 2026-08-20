@@ -5,6 +5,7 @@ import {
   createMonthlySubscription,
   findExistingMonthlySubscription,
   getSavedMethod,
+  resolveMonthlyBaseCents,
 } from "@/lib/billing/subscription";
 
 async function loadAccount(accountId: string) {
@@ -13,7 +14,7 @@ async function loadAccount(accountId: string) {
   if (!user) return { user: null, account: null };
   const { data: account } = await supabase
     .from("accounts")
-    .select("id, name, contact_id, stripe_customer_id, setup_fee_paid_at")
+    .select("id, name, contact_id, stripe_customer_id, setup_fee_paid_at, mrr")
     .eq("id", accountId)
     .single();
   return { user, account };
@@ -50,7 +51,8 @@ export async function GET(
         reason: `A monthly subscription already exists (status: ${existing.status}).`,
       });
     }
-    const method = await getSavedMethod(account.stripe_customer_id);
+    const baseAchCents = resolveMonthlyBaseCents(account.mrr as number | null);
+    const method = await getSavedMethod(account.stripe_customer_id, baseAchCents);
     if (!method) {
       return NextResponse.json({
         eligible: false,
@@ -96,10 +98,12 @@ export async function POST(
       );
     }
 
+    const baseAchCents = resolveMonthlyBaseCents(account.mrr as number | null);
     const { subscription, method } = await createMonthlySubscription({
       customerId: account.stripe_customer_id,
       accountId: id,
       accountName: account.name,
+      baseAchCents,
     });
 
     const amount = (method.monthlyCents / 100).toLocaleString("en-US", {

@@ -9,28 +9,44 @@ import Stripe from "stripe";
  * Stripe customer, which the webhook writes back onto the CRM account.
  */
 
-export const SETUP_FEE_ACH_CENTS = 150_000; // $1,500.00
-export const SETUP_FEE_CARD_CENTS = 154_500; // $1,545.00 (incl. 3% card surcharge)
+// Card processing surcharge applied on top of the ACH/base amount (services
+// agreement §3.4). Kept as a shared rate so setup fee and monthly retainer
+// derive the card price identically.
+export const CARD_SURCHARGE_RATE = 0.03;
 
-const PRICE_LOOKUPS = {
-  ach: "jmc_setup_fee_ach_1500",
-  card: "jmc_setup_fee_card_1545",
-} as const;
+/** Card-rail amount for a given ACH/base amount, incl. the 3% processing surcharge. */
+export function cardCentsFor(achCents: number): number {
+  return Math.round(achCents * (1 + CARD_SURCHARGE_RATE));
+}
 
 function getStripe(): Stripe {
   if (!process.env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not set");
   return new Stripe(process.env.STRIPE_SECRET_KEY, { typescript: true });
 }
 
-async function findOrCreatePrices(stripe: Stripe): Promise<{ ach: string; card: string }> {
+/**
+ * Find (or lazily create) the ACH + card prices for a specific setup-fee
+ * amount. Lookup keys are keyed off the exact cents so every distinct fee gets
+ * its own reusable pair — no longer bound to the single $1,500 template.
+ */
+async function findOrCreatePrices(
+  stripe: Stripe,
+  achCents: number
+): Promise<{ ach: string; card: string }> {
+  const cardCents = cardCentsFor(achCents);
+  const lookups = {
+    ach: `jmc_setup_fee_ach_${achCents}c`,
+    card: `jmc_setup_fee_card_${cardCents}c`,
+  } as const;
+
   const existing = await stripe.prices.list({
-    lookup_keys: [PRICE_LOOKUPS.ach, PRICE_LOOKUPS.card],
+    lookup_keys: [lookups.ach, lookups.card],
     limit: 2,
   });
   const found: Partial<Record<"ach" | "card", string>> = {};
   for (const p of existing.data) {
-    if (p.lookup_key === PRICE_LOOKUPS.ach) found.ach = p.id;
-    if (p.lookup_key === PRICE_LOOKUPS.card) found.card = p.id;
+    if (p.lookup_key === lookups.ach) found.ach = p.id;
+    if (p.lookup_key === lookups.card) found.card = p.id;
   }
   if (found.ach && found.card) return { ach: found.ach, card: found.card };
 
@@ -43,8 +59,8 @@ async function findOrCreatePrices(stripe: Stripe): Promise<{ ach: string; card: 
       await stripe.prices.create({
         product: product.id,
         currency: "usd",
-        unit_amount: SETUP_FEE_ACH_CENTS,
-        lookup_key: PRICE_LOOKUPS.ach,
+        unit_amount: achCents,
+        lookup_key: lookups.ach,
         nickname: "Implementation fee — ACH",
       })
     ).id;
@@ -54,8 +70,8 @@ async function findOrCreatePrices(stripe: Stripe): Promise<{ ach: string; card: 
       await stripe.prices.create({
         product: product.id,
         currency: "usd",
-        unit_amount: SETUP_FEE_CARD_CENTS,
-        lookup_key: PRICE_LOOKUPS.card,
+        unit_amount: cardCents,
+        lookup_key: lookups.card,
         nickname: "Implementation fee — card (incl. 3% processing)",
       })
     ).id;
@@ -77,9 +93,14 @@ export async function createSetupFeeLinks(params: {
   accountId: string;
   contractId: string;
   accountName: string;
+  /** ACH/base implementation fee in cents (must be > 0). Card adds 3%. */
+  setupFeeCents: number;
 }): Promise<SetupFeeLinks> {
+  if (!params.setupFeeCents || params.setupFeeCents <= 0) {
+    throw new Error("createSetupFeeLinks called without a positive setup fee");
+  }
   const stripe = getStripe();
-  const prices = await findOrCreatePrices(stripe);
+  const prices = await findOrCreatePrices(stripe, params.setupFeeCents);
 
   const common = (method: "ach" | "card") => ({
     line_items: [{ price: prices[method], quantity: 1 }],
