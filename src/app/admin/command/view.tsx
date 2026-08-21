@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronRight, ExternalLink, Flag, Search } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type {
+  CommandAgent,
   CommandClient,
   CommandDeal,
   CommandProspect,
@@ -29,6 +30,15 @@ const relTime = (iso: string | null | undefined) => {
   if (days === 1) return "yesterday";
   if (days < 30) return `${days}d ago`;
   return shortDate(iso);
+};
+
+// Short age for machine heartbeats, where "today" is uselessly coarse.
+const relSecs = (s: number | null) => {
+  if (s === null) return "never";
+  if (s < 90) return `${s}s`;
+  if (s < 5400) return `${Math.round(s / 60)}m`;
+  if (s < 129_600) return `${Math.round(s / 3600)}h`;
+  return `${Math.round(s / 86_400)}d`;
 };
 
 // Status is genuine state → keep color. Everything else on the page is neutral,
@@ -723,6 +733,93 @@ function WarmNow({ prospects }: { prospects: CommandProspect[] }) {
   );
 }
 
+// ---------- agent fleet ----------
+
+function AgentFleet({ agents, available }: { agents: CommandAgent[]; available: boolean }) {
+  const byCustomer = useMemo(() => {
+    const m = new Map<string, CommandAgent[]>();
+    for (const a of agents) {
+      const arr = m.get(a.customerId) ?? [];
+      arr.push(a);
+      m.set(a.customerId, arr);
+    }
+    return [...m.entries()];
+  }, [agents]);
+
+  const staleCount = agents.filter((a) => a.stale).length;
+
+  return (
+    <section>
+      <div className="mb-3 flex items-center gap-3">
+        <h2 className="text-sm font-semibold text-white" style={heading}>
+          Agent fleet
+        </h2>
+        <span className="text-[11px] text-white/30">
+          {available
+            ? staleCount > 0
+              ? `${staleCount} silent`
+              : "all reporting"
+            : "telemetry unavailable"}
+        </span>
+        <div className="h-px min-w-6 flex-1 bg-white/10" />
+      </div>
+      {!available ? (
+        <div className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-white/35">
+          Couldn&apos;t reach triple3-ops telemetry — fleet status unknown.
+        </div>
+      ) : agents.length === 0 ? (
+        <div className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-white/35">
+          No agents reporting yet.
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
+          <div className="divide-y divide-white/[0.06]">
+            {byCustomer.map(([customerId, rows]) => (
+              <div key={customerId} className="px-4 py-2.5">
+                <div className={cn(label, "mb-1")}>{customerId}</div>
+                {rows.map((a) => (
+                  <div key={a.agentId} className="flex items-center gap-2 py-[3px] text-xs">
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 flex-none rounded-full",
+                        a.stale ? "bg-red-400" : "bg-emerald-400",
+                      )}
+                    />
+                    <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-white/80">
+                      {a.agentId}
+                    </span>
+                    {a.lastTaskName && (
+                      <span
+                        className={cn(
+                          "flex-none truncate text-[10.5px]",
+                          a.lastTaskStatus === "error" ? "text-red-300" : "text-white/40",
+                        )}
+                        title={a.lastTaskAt ?? undefined}
+                      >
+                        {a.lastTaskName} {a.lastTaskStatus === "error" ? "failed" : "ok"}
+                        {a.lastTaskAt ? ` · ${relTime(a.lastTaskAt)}` : ""}
+                      </span>
+                    )}
+                    <span
+                      className={cn(
+                        "w-14 flex-none text-right tabular-nums text-[10.5px]",
+                        a.stale ? "text-red-300" : "text-white/40",
+                      )}
+                      title={a.lastHeartbeat ? `heartbeat ${a.lastHeartbeat} · threshold ${a.staleSeconds}s` : "no heartbeat recorded"}
+                    >
+                      ♥ {relSecs(a.ageSeconds)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ---------- root ----------
 
 export default function CommandView({ data }: { data: CommandResponse }) {
@@ -733,7 +830,10 @@ export default function CommandView({ data }: { data: CommandResponse }) {
       <ClientRows clients={data.clients} queue={data.queue} />
       <div className="grid grid-cols-1 gap-7 xl:grid-cols-[1.5fr_1fr]">
         <Pipeline stages={data.stages} deals={data.deals} />
-        <WarmNow prospects={data.prospects} />
+        <div className="flex flex-col gap-7">
+          <WarmNow prospects={data.prospects} />
+          <AgentFleet agents={data.agents} available={data.agentsAvailable} />
+        </div>
       </div>
       <p className="text-center text-[11px] text-white/25">
         Tell Zeke in Pingo to update any of this — move deals, log deliveries, attach links.

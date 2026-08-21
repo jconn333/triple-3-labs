@@ -14,6 +14,50 @@ const daysAhead = (n: number) => new Date(Date.now() + n * 86_400_000).toISOStri
 
 const FIXTURE: CommandResponse = {
   generatedAt: new Date().toISOString(),
+  agentsAvailable: true,
+  // Static timestamps (not daysAgo()) — sub-second Date.now() drift between
+  // the server and client renders shows up in title attrs as hydration noise.
+  agents: [
+    {
+      agentId: "bridge-sample-silo",
+      customerId: "sample-silo",
+      role: "bridge",
+      host: "mac-mini",
+      lastHeartbeat: "2026-08-21T12:00:00.000Z",
+      ageSeconds: 42,
+      staleSeconds: 300,
+      stale: false,
+      lastTaskName: "pingo-chat",
+      lastTaskStatus: "ok",
+      lastTaskAt: "2026-08-21T11:58:00.000Z",
+    },
+    {
+      agentId: "worker-sample-silo",
+      customerId: "sample-silo",
+      role: "worker",
+      host: "mac-mini",
+      lastHeartbeat: "2026-08-19T12:00:00.000Z",
+      ageSeconds: 172_800,
+      staleSeconds: 691_200,
+      stale: false,
+      lastTaskName: "seo-weekly",
+      lastTaskStatus: "ok",
+      lastTaskAt: "2026-08-19T12:00:00.000Z",
+    },
+    {
+      agentId: "bridge-demo-chiro",
+      customerId: "demo-chiro",
+      role: "bridge",
+      host: "mac-mini",
+      lastHeartbeat: "2026-08-21T00:00:00.000Z",
+      ageSeconds: 43_200,
+      staleSeconds: 300,
+      stale: true,
+      lastTaskName: "pingo-chat",
+      lastTaskStatus: "error",
+      lastTaskAt: "2026-08-21T00:00:00.000Z",
+    },
+  ],
   kpis: {
     mrr: 2997,
     customers: 2,

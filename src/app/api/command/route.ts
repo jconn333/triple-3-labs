@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createOpsClient } from "@/lib/supabase/ops";
 
 export const dynamic = "force-dynamic";
 
@@ -101,6 +102,20 @@ export interface CommandProspect {
   reports: { title: string; url: string; views: number; lastViewed: string | null }[];
 }
 
+export interface CommandAgent {
+  agentId: string;
+  customerId: string;
+  role: "bridge" | "worker" | "agent";
+  host: string | null;
+  lastHeartbeat: string | null;
+  ageSeconds: number | null;
+  staleSeconds: number; // effective threshold (per-agent override or default)
+  stale: boolean;
+  lastTaskName: string | null;
+  lastTaskStatus: string | null;
+  lastTaskAt: string | null;
+}
+
 export interface CommandResponse {
   kpis: CommandKpis;
   queue: QueueItem[];
@@ -108,6 +123,8 @@ export interface CommandResponse {
   stages: CommandStage[];
   deals: CommandDeal[];
   prospects: CommandProspect[];
+  agents: CommandAgent[];
+  agentsAvailable: boolean; // false = ops telemetry unreachable/unconfigured
   generatedAt: string;
 }
 
@@ -382,8 +399,75 @@ export async function GET() {
     .map(({ reportIds: _reportIds, ...p }) => p)
     .sort((a, b) => (b.lastViewed ?? "").localeCompare(a.lastViewed ?? ""));
 
+  // ---------- agent fleet (triple3-ops telemetry, separate project) ----------
+  // Isolated fetch: an ops outage or missing env must degrade to "no fleet
+  // data", never 500 the whole command center.
+  let agents: CommandAgent[] = [];
+  let agentsAvailable = false;
+  try {
+    const ops = createOpsClient();
+    const { data: health, error: opsError } = await ops
+      .from("agent_health")
+      .select(
+        "agent_id, customer_id, host, last_heartbeat, last_task_name, last_task_status, last_task_at, stale_threshold_seconds",
+      );
+    if (!opsError && health) {
+      agentsAvailable = true;
+      agents = health.map((h) => {
+        const ageSeconds = h.last_heartbeat
+          ? Math.max(0, Math.round((now - new Date(h.last_heartbeat).getTime()) / 1000))
+          : null;
+        const staleSeconds = h.stale_threshold_seconds ?? 1800;
+        return {
+          agentId: h.agent_id,
+          customerId: h.customer_id,
+          role: h.agent_id.startsWith("bridge-")
+            ? ("bridge" as const)
+            : h.agent_id.startsWith("worker-")
+              ? ("worker" as const)
+              : ("agent" as const),
+          host: h.host ?? null,
+          lastHeartbeat: h.last_heartbeat ?? null,
+          ageSeconds,
+          staleSeconds,
+          stale: ageSeconds === null || ageSeconds > staleSeconds,
+          lastTaskName: h.last_task_name ?? null,
+          lastTaskStatus: h.last_task_status ?? null,
+          lastTaskAt: h.last_task_at ?? null,
+        };
+      });
+      agents.sort(
+        (a, b) => a.customerId.localeCompare(b.customerId) || a.agentId.localeCompare(b.agentId),
+      );
+    }
+  } catch {
+    // env not configured or ops unreachable — fleet section renders its note
+  }
+
   // ---------- needs-you queue ----------
   const queue: QueueItem[] = [];
+  for (const ag of agents) {
+    if (ag.stale) {
+      queue.push({
+        key: `agent-stale:${ag.agentId}`,
+        severity: "crit",
+        action: `Check agent ${ag.agentId}`,
+        why:
+          ag.ageSeconds === null
+            ? "no heartbeat ever recorded"
+            : `silent ${Math.round(ag.ageSeconds / 60)}m (threshold ${Math.round(ag.staleSeconds / 60)}m)`,
+      });
+    } else if (ag.lastTaskStatus === "error") {
+      queue.push({
+        // lastTaskAt in the key so a NEW failure resurfaces even if an older
+        // one was snoozed away.
+        key: `agent-error:${ag.agentId}:${ag.lastTaskAt ?? ""}`,
+        severity: "warn",
+        action: `${ag.agentId}: last ${ag.lastTaskName ?? "task"} failed`,
+        why: ag.lastTaskAt ? `failed ${new Date(ag.lastTaskAt).toISOString().slice(0, 16).replace("T", " ")}` : "recent run failed",
+      });
+    }
+  }
   for (const c of clients) {
     if (!c.billingSetUp && (c.mrr ?? 0) > 0) {
       queue.push({
@@ -458,6 +542,8 @@ export async function GET() {
     stages: commandStages,
     deals: commandDeals,
     prospects,
+    agents,
+    agentsAvailable,
     generatedAt: new Date().toISOString(),
   };
 
