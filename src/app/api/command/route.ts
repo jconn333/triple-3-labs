@@ -16,6 +16,7 @@ export interface CommandKpis {
 }
 
 export interface QueueItem {
+  key: string; // deterministic, stable across requests — used to snooze/dismiss
   severity: "crit" | "warn";
   action: string;
   why: string;
@@ -144,6 +145,7 @@ export async function GET() {
     dealsRes,
     reportsRes,
     viewsRes,
+    snoozesRes,
   ] = await Promise.all([
     supabase.from("accounts").select("*, contact:contacts(first_name,last_name,email,company)"),
     supabase.from("commitments").select("*").order("next_due", { ascending: true, nullsFirst: false }),
@@ -154,11 +156,13 @@ export async function GET() {
     supabase.from("deals").select("*, contact:contacts(first_name,last_name,company,email)"),
     supabase.from("prospect_reports").select("id,slug,prospect_name,prospect_domain,title,created_at"),
     supabase.from("report_views").select("report_id,viewed_at"),
+    supabase.from("command_snoozes").select("queue_key").gt("snoozed_until", new Date().toISOString()),
   ]);
 
   const firstError =
     accountsRes.error ?? commitmentsRes.error ?? deliveriesRes.error ?? activitiesRes.error ??
-    linksRes.error ?? stagesRes.error ?? dealsRes.error ?? reportsRes.error ?? viewsRes.error;
+    linksRes.error ?? stagesRes.error ?? dealsRes.error ?? reportsRes.error ?? viewsRes.error ??
+    snoozesRes.error;
   if (firstError) return NextResponse.json({ error: firstError.message }, { status: 500 });
 
   const accounts = accountsRes.data ?? [];
@@ -170,6 +174,7 @@ export async function GET() {
   const deals = dealsRes.data ?? [];
   const reports = reportsRes.data ?? [];
   const reportViews = viewsRes.data ?? [];
+  const snoozedKeys = new Set((snoozesRes.data ?? []).map((s) => s.queue_key));
 
   const now = Date.now();
 
@@ -382,6 +387,7 @@ export async function GET() {
   for (const c of clients) {
     if (!c.billingSetUp && (c.mrr ?? 0) > 0) {
       queue.push({
+        key: `billing:${c.accountId}`,
         severity: "crit",
         action: `Set up ${c.name} billing`,
         why: `$${c.mrr?.toLocaleString()}/mo agreed, no Stripe customer yet`,
@@ -391,6 +397,7 @@ export async function GET() {
     const unanchored = c.commitments.filter((cm) => cm.kind === "recurring" && !cm.nextDue);
     if (unanchored.length > 0) {
       queue.push({
+        key: `kickoff:${c.accountId}`,
         severity: "warn",
         action: `Kick off ${c.name}`,
         why: `${unanchored.length} recurring commitment${unanchored.length > 1 ? "s" : ""} not anchored — onboarding/access pending`,
@@ -402,6 +409,7 @@ export async function GET() {
       const dueIn = new Date(cm.nextDue).getTime() - now;
       if (dueIn < 0) {
         queue.push({
+          key: `overdue:${cm.id}`,
           severity: "crit",
           action: `${c.name}: ${cm.name} overdue`,
           why: `was due ${cm.nextDue}`,
@@ -409,6 +417,7 @@ export async function GET() {
         });
       } else if (dueIn < 7 * DAY) {
         queue.push({
+          key: `duesoon:${cm.id}`,
           severity: "warn",
           action: `${c.name}: ${cm.name} due soon`,
           why: `due ${cm.nextDue}`,
@@ -420,13 +429,16 @@ export async function GET() {
   for (const p of prospects) {
     if (p.viewedLast7d && !p.hasDeal) {
       queue.push({
+        key: `prospect:${p.key}`,
         severity: "crit",
         action: `Follow up ${p.name}`,
         why: `${p.docs} doc${p.docs > 1 ? "s" : ""} out, ${p.views} views, opened recently — no deal in pipeline`,
       });
     }
   }
-  queue.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "crit" ? -1 : 1));
+  // Snoozed items drop out until their snooze lapses (see command_snoozes).
+  const visibleQueue = queue.filter((q) => !snoozedKeys.has(q.key));
+  visibleQueue.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "crit" ? -1 : 1));
 
   // ---------- KPIs ----------
   const kpis: CommandKpis = {
@@ -436,12 +448,12 @@ export async function GET() {
     customersOnboarding: clients.filter((c) => c.status === "onboarding").length,
     openDeals: commandDeals.filter((d) => !d.isClosed).length,
     engagingProspects7d: prospects.filter((p) => p.viewedLast7d).length,
-    needsYou: queue.length,
+    needsYou: visibleQueue.length,
   };
 
   const payload: CommandResponse = {
     kpis,
-    queue,
+    queue: visibleQueue,
     clients,
     stages: commandStages,
     deals: commandDeals,

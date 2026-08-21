@@ -31,28 +31,12 @@ const relTime = (iso: string | null | undefined) => {
   return shortDate(iso);
 };
 
-// pipeline_stages.color values → static tailwind classes (must be literal for JIT)
-const STAGE_TEXT: Record<string, string> = {
-  violet: "text-violet-300 bg-violet-500/10",
-  cyan: "text-cyan-300 bg-cyan-500/10",
-  purple: "text-purple-300 bg-purple-500/10",
-  pink: "text-pink-300 bg-pink-500/10",
-  emerald: "text-emerald-300 bg-emerald-500/10",
-  zinc: "text-zinc-400 bg-zinc-500/10",
-};
-const STAGE_DOT: Record<string, string> = {
-  violet: "bg-violet-400",
-  cyan: "bg-cyan-400",
-  purple: "bg-purple-400",
-  pink: "bg-pink-400",
-  emerald: "bg-emerald-400",
-  zinc: "bg-zinc-400",
-};
-
+// Status is genuine state → keep color. Everything else on the page is neutral,
+// so these three colors actually mean something at a glance.
 const STATUS_PILL: Record<CommandClient["status"], { label: string; cls: string; dot: string }> = {
-  active: { label: "Active", cls: "text-emerald-300 bg-emerald-400/10 border-emerald-400/20", dot: "bg-emerald-400" },
-  onboarding: { label: "Onboard", cls: "text-amber-300 bg-amber-400/10 border-amber-400/20", dot: "bg-amber-400" },
-  at_risk: { label: "At risk", cls: "text-red-300 bg-red-400/10 border-red-400/20", dot: "bg-red-400" },
+  active: { label: "Active", cls: "text-emerald-300 bg-emerald-400/10", dot: "bg-emerald-400" },
+  onboarding: { label: "Onboard", cls: "text-amber-300 bg-amber-400/10", dot: "bg-amber-400" },
+  at_risk: { label: "At risk", cls: "text-red-300 bg-red-400/10", dot: "bg-red-400" },
 };
 
 const LINK_KIND_LABEL: Record<string, string> = {
@@ -69,84 +53,142 @@ const LINK_KIND_LABEL: Record<string, string> = {
 const label = "text-[10px] font-semibold uppercase tracking-wider text-white/30";
 const heading = { fontFamily: "var(--font-space-grotesk)" };
 
-// ---------- sections ----------
+// ---------- summary line (replaces the 5-tile KPI strip) ----------
 
-function KpiStrip({ kpis }: { kpis: CommandResponse["kpis"] }) {
-  const items = [
-    { lbl: "Recurring / mo", val: money(kpis.mrr), meta: `${kpis.customersBilling} billing` },
-    { lbl: "Customers", val: String(kpis.customers), meta: `${kpis.customersOnboarding} onboarding` },
-    { lbl: "Open pipeline", val: String(kpis.openDeals), meta: "deals in flight" },
-    { lbl: "Engaging / 7d", val: String(kpis.engagingProspects7d), meta: "prospects reading" },
-    { lbl: "Needs you", val: String(kpis.needsYou), meta: "queue below", warn: kpis.needsYou > 0 },
+function SummaryLine({ kpis }: { kpis: CommandResponse["kpis"] }) {
+  const stats: { val: string; lbl: string }[] = [
+    { val: money(kpis.mrr), lbl: "/mo" },
+    { val: String(kpis.customers), lbl: kpis.customers === 1 ? "customer" : "customers" },
+    { val: String(kpis.openDeals), lbl: "in pipeline" },
+    { val: String(kpis.engagingProspects7d), lbl: "reading reports" },
   ];
   return (
-    <div className="flex overflow-x-auto rounded-xl border border-white/10 bg-white/[0.02]">
-      {items.map((it) => (
-        <div key={it.lbl} className="min-w-[140px] flex-1 border-r border-white/10 px-5 py-4 last:border-r-0">
-          <div className={label}>{it.lbl}</div>
-          <div
-            className={cn("mt-1 text-xl font-bold tabular-nums", it.warn ? "text-amber-300" : "text-white")}
-            style={heading}
-          >
-            {it.val}
-          </div>
-          <div className="mt-0.5 truncate text-[11px] text-white/40">{it.meta}</div>
-        </div>
+    <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm text-white/45">
+      {stats.map((s, i) => (
+        <span key={i} className="flex items-baseline gap-1.5">
+          {i > 0 && <span className="mr-3.5 h-3 w-px bg-white/10" />}
+          <b className="text-[15px] font-semibold tabular-nums text-white" style={heading}>
+            {s.val}
+          </b>
+          {s.lbl}
+        </span>
       ))}
     </div>
   );
 }
 
+// ---------- needs you (the focal point — collapsed by default, dismissible) ----------
+
 function NeedsYou({ queue }: { queue: QueueItem[] }) {
   const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+
+  const visible = useMemo(() => queue.filter((q) => !dismissed.has(q.key)), [queue, dismissed]);
   if (queue.length === 0) return null;
-  const crit = queue.filter((q) => q.severity === "crit").length;
+
+  const crit = visible.filter((q) => q.severity === "crit").length;
+
+  const dismiss = (key: string) => {
+    setDismissed((prev) => new Set(prev).add(key)); // optimistic
+    void fetch("/api/command/snooze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key }),
+    }).catch(() => {
+      // If the snooze didn't persist, it simply reappears on the next refresh.
+    });
+  };
+
   return (
-    <div className="overflow-hidden rounded-xl border border-amber-400/30">
+    <div
+      className={cn(
+        "overflow-hidden rounded-2xl border",
+        visible.length > 0 ? "border-amber-400/25" : "border-emerald-400/25",
+      )}
+    >
       <button
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex w-full items-center gap-2 bg-amber-400/[0.07] px-4 py-2.5 text-left hover:bg-amber-400/[0.12]",
-          open && "border-b border-white/10",
+          "flex w-full items-center gap-2.5 px-5 py-3.5 text-left transition-colors",
+          visible.length > 0
+            ? "bg-amber-400/[0.05] hover:bg-amber-400/[0.09]"
+            : "bg-emerald-400/[0.05] hover:bg-emerald-400/[0.09]",
         )}
       >
-        <Flag size={14} className="text-amber-300" />
-        <h2 className="text-sm font-semibold text-white" style={heading}>
+        <Flag size={15} className={visible.length > 0 ? "text-amber-300" : "text-emerald-300"} />
+        <h2 className="text-[15px] font-semibold text-white" style={heading}>
           Needs you
         </h2>
-        <span className="ml-auto text-xs tabular-nums text-amber-300/80">
-          {queue.length} item{queue.length > 1 ? "s" : ""}
-          {crit > 0 && <span className="ml-2 text-red-300">{crit} urgent</span>}
+        <span className="ml-auto text-xs tabular-nums">
+          {visible.length === 0 ? (
+            <span className="text-emerald-300">all clear</span>
+          ) : (
+            <span className="text-amber-300/85">
+              {visible.length} item{visible.length > 1 ? "s" : ""}
+              {crit > 0 && <span className="ml-2 font-semibold text-red-300">{crit} urgent</span>}
+            </span>
+          )}
         </span>
-        <ChevronRight size={13} className={cn("text-amber-300/60 transition-transform", open && "rotate-90")} />
+        <ChevronRight
+          size={14}
+          className={cn(
+            "transition-transform",
+            visible.length > 0 ? "text-amber-300/60" : "text-emerald-300/60",
+            open && "rotate-90",
+          )}
+        />
       </button>
-      <div className={cn("divide-y divide-white/5", !open && "hidden")}>
-        {queue.map((q, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-2.5">
-            <span
-              className={cn(
-                "h-2 w-2 flex-none rounded-full",
-                q.severity === "crit" ? "bg-red-400" : "bg-amber-400",
-              )}
-            />
-            <div className="min-w-0 flex-1 text-sm">
-              <span className="font-medium text-white">{q.action}</span>
-              <span className="ml-2 text-[13px] text-white/50">— {q.why}</span>
+
+      {open && (
+        <div>
+          {visible.length === 0 && (
+            <div className="border-t border-white/5 px-5 py-4 text-sm text-emerald-300/90">
+              ✓ Nothing needs you right now.
             </div>
-            {q.accountId && (
-              <Link
-                href={`/admin/accounts/${q.accountId}`}
-                className="flex-none rounded-md bg-violet/10 px-2.5 py-1 text-[11px] font-medium text-violet hover:bg-violet/20"
-              >
-                Open ↗
-              </Link>
-            )}
-          </div>
-        ))}
-      </div>
+          )}
+          {visible.map((q) => (
+            <div
+              key={q.key}
+              className="flex items-center gap-3.5 border-t border-white/5 px-5 py-3 hover:bg-white/[0.015]"
+            >
+              <span
+                className={cn(
+                  "h-2 w-2 flex-none rounded-full",
+                  q.severity === "crit"
+                    ? "bg-red-400 shadow-[0_0_0_3px_rgba(248,113,113,0.12)]"
+                    : "bg-amber-400",
+                )}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium text-white">{q.action}</div>
+                <div className="mt-0.5 text-[12.5px] text-white/50">{q.why}</div>
+              </div>
+              <div className="flex flex-none items-center gap-1.5">
+                {q.accountId && (
+                  <Link
+                    href={`/admin/accounts/${q.accountId}`}
+                    className="rounded-lg bg-violet/10 px-3 py-1.5 text-[12px] font-medium text-violet hover:bg-violet/20"
+                  >
+                    Open ↗
+                  </Link>
+                )}
+                <button
+                  onClick={() => dismiss(q.key)}
+                  title="Hide this for 14 days"
+                  className="rounded-lg border border-white/10 px-2.5 py-1.5 text-[12px] font-medium text-white/40 hover:border-red-400/30 hover:bg-red-400/[0.06] hover:text-red-300"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
+
+// ---------- clients ----------
 
 type ClientFilter = "all" | "attention" | "active" | "onboarding";
 
@@ -194,7 +236,7 @@ function ClientRows({ clients, queue }: { clients: CommandClient[]; queue: Queue
 
   return (
     <section>
-      <div className="mb-2.5 flex flex-wrap items-center gap-3">
+      <div className="mb-3 flex flex-wrap items-center gap-3">
         <h2 className="text-sm font-semibold text-white" style={heading}>
           Clients
         </h2>
@@ -227,16 +269,7 @@ function ClientRows({ clients, queue }: { clients: CommandClient[]; queue: Queue
       </div>
 
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
-        {/* header */}
-        <div className="hidden grid-cols-[1.5fr_92px_1.25fr_110px_1.6fr_88px_20px] gap-2.5 border-b border-white/10 bg-white/[0.04] px-4 py-1.5 md:grid">
-          {["Client", "Status", "Services", "MRR", "Latest for them", "Next due", ""].map((h, i) => (
-            <span key={i} className={cn(label, (h === "MRR" || h === "Next due") && "text-right")}>
-              {h}
-            </span>
-          ))}
-        </div>
-
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-white/[0.06]">
           {shown.length === 0 && (
             <div className="px-4 py-8 text-center text-sm text-white/30">No clients match.</div>
           )}
@@ -245,73 +278,71 @@ function ClientRows({ clients, queue }: { clients: CommandClient[]; queue: Queue
             const isOpen = open.has(c.accountId);
             return (
               <div key={c.accountId}>
-                {/* row line */}
+                {/* row — name+services / status / mrr / next action */}
                 <div
                   role="button"
                   tabIndex={0}
                   onClick={() => toggle(c.accountId)}
                   onKeyDown={(e) => e.key === "Enter" && toggle(c.accountId)}
                   className={cn(
-                    "grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto_20px] items-center gap-2.5 px-4 py-2 text-left hover:bg-white/[0.04] md:grid-cols-[1.5fr_92px_1.25fr_110px_1.6fr_88px_20px]",
-                    isOpen && "bg-white/[0.04]",
+                    "grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_18px] items-center gap-4 px-5 py-3.5 text-left hover:bg-white/[0.03] md:grid-cols-[minmax(0,1fr)_96px_96px_1.2fr_18px]",
+                    isOpen && "bg-white/[0.03]",
                   )}
                 >
-                  <span className="flex min-w-0 items-baseline gap-2 overflow-hidden whitespace-nowrap">
+                  <span className="flex min-w-0 flex-col">
                     <Link
                       href={`/admin/accounts/${c.accountId}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex-none text-[13px] font-semibold text-white hover:text-violet-300 hover:underline"
+                      className="w-fit text-[15px] font-semibold text-white hover:text-violet-300 hover:underline"
+                      style={heading}
                     >
                       {c.name}
                     </Link>
-                    <span className="hidden truncate text-[11px] text-white/35 md:inline">{c.contactName}</span>
+                    <span className="mt-0.5 truncate text-[12px] text-white/35">
+                      {[c.contactName, c.services.join(", ")].filter(Boolean).join(" · ") || "—"}
+                    </span>
                   </span>
                   <span
                     className={cn(
-                      "inline-flex w-fit items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+                      "hidden w-fit items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold md:inline-flex",
                       pill.cls,
                     )}
                   >
                     <span className={cn("h-1.5 w-1.5 rounded-full", pill.dot)} />
                     {pill.label}
                   </span>
-                  <span className="hidden min-w-0 gap-1 overflow-hidden md:flex">
-                    {c.services.map((s) => (
-                      <span
-                        key={s}
-                        className="whitespace-nowrap rounded-md border border-violet/25 bg-violet/10 px-1.5 py-px text-[10px] text-violet-300"
-                      >
-                        {s}
-                      </span>
-                    ))}
-                  </span>
                   <span
                     className={cn(
-                      "whitespace-nowrap text-right text-xs tabular-nums",
-                      c.billingSetUp ? "text-white/85" : "text-amber-300",
+                      "whitespace-nowrap text-right text-[15px] font-semibold tabular-nums md:text-right",
+                      c.billingSetUp ? "text-white/90" : "text-amber-300",
                     )}
+                    style={heading}
                   >
                     {money(c.mrr)}
                     {!c.billingSetUp && " ⚠"}
                   </span>
-                  <span className="hidden min-w-0 items-baseline gap-2 overflow-hidden whitespace-nowrap text-[12px] text-white/50 md:flex">
-                    <span className="truncate">{c.latest?.text ?? "—"}</span>
-                    <span className="flex-none text-[10px] text-violet-300/70">
-                      {c.latest ? relTime(c.latest.at) : ""}
-                    </span>
-                  </span>
-                  <span className="hidden whitespace-nowrap text-right text-[11px] tabular-nums text-white/50 md:inline">
-                    {c.nextDue ? shortDate(c.nextDue) : c.status === "onboarding" ? "kickoff" : "—"}
+                  <span className="hidden text-[12.5px] text-white/50 md:block">
+                    {c.nextDue ? (
+                      <>
+                        <span className="text-white/30">Next</span> {shortDate(c.nextDue)}
+                      </>
+                    ) : c.status === "onboarding" ? (
+                      <>
+                        <span className="text-white/30">Next</span> Kickoff
+                      </>
+                    ) : (
+                      <span className="text-white/25">—</span>
+                    )}
                   </span>
                   <ChevronRight
-                    size={13}
-                    className={cn("text-white/30 transition-transform", isOpen && "rotate-90")}
+                    size={14}
+                    className={cn("text-white/25 transition-transform", isOpen && "rotate-90")}
                   />
                 </div>
 
-                {/* expanded */}
+                {/* expanded detail */}
                 {isOpen && (
-                  <div className="grid grid-cols-1 gap-0 border-t border-dashed border-white/10 bg-white/[0.02] md:grid-cols-3 md:divide-x md:divide-white/5">
+                  <div className="grid grid-cols-1 gap-0 border-t border-dashed border-white/10 bg-white/[0.015] md:grid-cols-3 md:divide-x md:divide-white/5">
                     <div className="px-5 py-4">
                       <div className={cn(label, "mb-2 flex justify-between")}>
                         <span>Attached docs &amp; links</span>
@@ -374,11 +405,17 @@ function ClientRows({ clients, queue }: { clients: CommandClient[]; queue: Queue
                         },
                         { k: "Setup fee", v: c.setupFeePaidAt ? `paid ${shortDate(c.setupFeePaidAt)}` : "—" },
                         { k: "Customer since", v: shortDate(c.customerSince) },
+                        { k: "Latest", v: c.latest?.text ?? "—" },
                         { k: "Contact", v: c.contactEmail ?? "—" },
                       ].map((row) => (
                         <div key={row.k} className="flex justify-between gap-3 py-0.5 text-xs">
-                          <span className="text-white/40">{row.k}</span>
-                          <span className={cn("text-right", row.warn ? "font-medium text-amber-300" : "text-white/75")}>
+                          <span className="flex-none text-white/40">{row.k}</span>
+                          <span
+                            className={cn(
+                              "min-w-0 truncate text-right",
+                              row.warn ? "font-medium text-amber-300" : "text-white/75",
+                            )}
+                          >
                             {row.v}
                           </span>
                         </div>
@@ -401,6 +438,8 @@ function ClientRows({ clients, queue }: { clients: CommandClient[]; queue: Queue
   );
 }
 
+// ---------- pipeline ----------
+
 function Pipeline({ stages, deals }: { stages: CommandStage[]; deals: CommandDeal[] }) {
   const [showClosed, setShowClosed] = useState(false);
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
@@ -413,12 +452,18 @@ function Pipeline({ stages, deals }: { stages: CommandStage[]; deals: CommandDea
       return next;
     });
   const total = deals.length || 1;
+  const openCount = deals.filter((d) => !d.isClosed).length;
+  const wonCount = deals.filter((d) => d.stage === "Won").length;
+
   return (
     <section>
-      <div className="mb-2.5 flex items-center gap-3">
+      <div className="mb-3 flex items-center gap-3">
         <h2 className="text-sm font-semibold text-white" style={heading}>
           Pipeline
         </h2>
+        <span className="text-[11px] tabular-nums text-white/30">
+          {openCount} open{wonCount > 0 ? ` · ${wonCount} won` : ""}
+        </span>
         <div className="h-px min-w-6 flex-1 bg-white/10" />
         <button
           onClick={() => setShowClosed((v) => !v)}
@@ -432,30 +477,25 @@ function Pipeline({ stages, deals }: { stages: CommandStage[]; deals: CommandDea
           {showClosed ? "Showing all" : "Show lost too"}
         </button>
       </div>
-      <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] pt-3">
-        <div className="mx-4 flex h-2 overflow-hidden rounded-full border border-white/10">
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] px-4 pt-3.5">
+        {/* thin proportion bar — open (violet) vs won (emerald) */}
+        <div className="flex h-1.5 overflow-hidden rounded-full">
           {stages
             .filter((s) => s.count > 0)
             .map((s) => (
               <div
                 key={s.name}
-                className={STAGE_DOT[s.color] ?? "bg-zinc-400"}
+                className={s.name === "Won" ? "bg-emerald-400" : s.isClosed ? "bg-white/15" : "bg-violet/55"}
                 style={{ width: `${(s.count / total) * 100}%` }}
                 title={`${s.name}: ${s.count}`}
               />
             ))}
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2.5">
-          {stages.map((s) => (
-            <span key={s.name} className="inline-flex items-center gap-1.5 text-[11px] tabular-nums text-white/50">
-              <span className={cn("h-1.5 w-1.5 rounded-full", STAGE_DOT[s.color] ?? "bg-zinc-400")} />
-              {s.name} {s.count}
-            </span>
-          ))}
-        </div>
-        <div className="divide-y divide-white/5 border-t border-white/5">
+        <div className="divide-y divide-white/[0.06] pt-1">
           {open.map((d) => {
             const isOpen = openIds.has(d.id);
+            const hot =
+              d.lastViewed && Date.now() - new Date(d.lastViewed).getTime() < 3 * 86_400_000;
             return (
               <div key={d.id}>
                 <div
@@ -464,8 +504,7 @@ function Pipeline({ stages, deals }: { stages: CommandStage[]; deals: CommandDea
                   onClick={() => toggle(d.id)}
                   onKeyDown={(e) => e.key === "Enter" && toggle(d.id)}
                   className={cn(
-                    "grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto_18px] items-center gap-2.5 px-4 py-2 text-left text-[13px] hover:bg-white/[0.04] md:grid-cols-[1.4fr_110px_1fr_110px_96px_18px]",
-                    isOpen && "bg-white/[0.04]",
+                    "grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto_16px] items-center gap-3 py-2.5 text-left text-[13px] hover:bg-white/[0.02]",
                   )}
                 >
                   {d.accountId || d.contactId ? (
@@ -481,37 +520,34 @@ function Pipeline({ stages, deals }: { stages: CommandStage[]; deals: CommandDea
                   )}
                   <span
                     className={cn(
-                      "w-fit whitespace-nowrap rounded-full px-2 py-0.5 text-center text-[10px] font-medium uppercase tracking-wide",
-                      STAGE_TEXT[d.stageColor] ?? STAGE_TEXT.zinc,
+                      "whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider",
+                      d.stage === "Won" ? "text-emerald-300" : d.isClosed ? "text-white/30" : "text-white/45",
                     )}
                   >
                     {d.stage}
                   </span>
-                  <span className="hidden truncate text-xs text-white/40 md:inline">{d.description ?? ""}</span>
-                  <span className="whitespace-nowrap text-right text-xs tabular-nums text-white/70">
-                    {d.amount ? `${money(d.amount)}` : "TBD"}
+                  <span className="whitespace-nowrap text-right text-xs tabular-nums text-white/60" style={heading}>
+                    {d.amount ? money(d.amount) : "TBD"}
                   </span>
-                  <span
-                    className={cn(
-                      "hidden whitespace-nowrap text-right text-[11px] tabular-nums md:inline",
-                      d.lastViewed && Date.now() - new Date(d.lastViewed).getTime() < 3 * 86_400_000
-                        ? "font-semibold text-red-300"
-                        : "text-white/40",
-                    )}
-                  >
-                    {d.views !== null ? `${d.views} views · ${relTime(d.lastViewed)}` : "—"}
-                  </span>
-                  <ChevronRight size={13} className={cn("text-white/30 transition-transform", isOpen && "rotate-90")} />
+                  <ChevronRight size={13} className={cn("text-white/25 transition-transform", isOpen && "rotate-90")} />
                 </div>
+                {/* engagement subline — only when there are report views */}
+                {d.views !== null && !isOpen && (
+                  <div className="-mt-1 pb-2 text-[11px] tabular-nums text-white/30">
+                    <span className={cn(hot && "font-semibold text-red-300/90")}>
+                      {d.views} views · {relTime(d.lastViewed)}
+                    </span>
+                  </div>
+                )}
                 {isOpen && (
-                  <div className="grid grid-cols-1 gap-0 border-t border-dashed border-white/10 bg-white/[0.02] md:grid-cols-[1.2fr_1fr] md:divide-x md:divide-white/5">
-                    <div className="px-5 py-4">
+                  <div className="mb-2 grid grid-cols-1 gap-0 rounded-lg border border-dashed border-white/10 bg-white/[0.015] md:grid-cols-[1.2fr_1fr] md:divide-x md:divide-white/5">
+                    <div className="px-4 py-3.5">
                       <div className={cn(label, "mb-2")}>Deal notes</div>
                       <p className="whitespace-pre-wrap text-xs leading-relaxed text-white/60">
                         {d.description ?? "No notes."}
                       </p>
                     </div>
-                    <div className="px-5 py-4">
+                    <div className="px-4 py-3.5">
                       <div className={cn(label, "mb-2 flex justify-between")}>
                         <span>Contact &amp; docs</span>
                         <span>{d.links.length} link{d.links.length === 1 ? "" : "s"}</span>
@@ -572,7 +608,9 @@ function Pipeline({ stages, deals }: { stages: CommandStage[]; deals: CommandDea
   );
 }
 
-function Prospects({ prospects }: { prospects: CommandProspect[] }) {
+// ---------- warm now (prospects reading reports) ----------
+
+function WarmNow({ prospects }: { prospects: CommandProspect[] }) {
   const [showAll, setShowAll] = useState(false);
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
   const list = showAll ? prospects : prospects.slice(0, 8);
@@ -585,11 +623,11 @@ function Prospects({ prospects }: { prospects: CommandProspect[] }) {
     });
   return (
     <section>
-      <div className="mb-2.5 flex items-center gap-3">
+      <div className="mb-3 flex items-center gap-3">
         <h2 className="text-sm font-semibold text-white" style={heading}>
-          Prospects
+          Warm now
         </h2>
-        <span className="text-[11px] text-white/30">by report engagement</span>
+        <span className="text-[11px] text-white/30">reading reports</span>
         <div className="h-px min-w-6 flex-1 bg-white/10" />
         {prospects.length > 8 && (
           <button
@@ -601,7 +639,7 @@ function Prospects({ prospects }: { prospects: CommandProspect[] }) {
         )}
       </div>
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-white/[0.06]">
           {list.map((p) => {
             const isOpen = openKeys.has(p.key);
             return (
@@ -611,13 +649,14 @@ function Prospects({ prospects }: { prospects: CommandProspect[] }) {
                   tabIndex={0}
                   onClick={() => toggle(p.key)}
                   onKeyDown={(e) => e.key === "Enter" && toggle(p.key)}
-                  className={cn("flex cursor-pointer items-center gap-3 px-4 py-2 hover:bg-white/[0.04]", isOpen && "bg-white/[0.04]")}
+                  className={cn("flex cursor-pointer items-center gap-3 px-4 py-3 hover:bg-white/[0.03]", isOpen && "bg-white/[0.03]")}
                 >
                   <span
                     className={cn(
-                      "w-9 flex-none rounded-md py-0.5 text-center text-xs font-semibold tabular-nums",
-                      p.viewedLast7d ? "bg-red-400/10 text-red-300" : "bg-white/5 text-white/50",
+                      "w-9 flex-none rounded-md py-1 text-center text-xs font-semibold tabular-nums",
+                      p.viewedLast7d ? "bg-red-400/10 text-red-300" : "bg-white/5 text-white/45",
                     )}
+                    style={heading}
                   >
                     {p.views}
                   </span>
@@ -626,29 +665,29 @@ function Prospects({ prospects }: { prospects: CommandProspect[] }) {
                       <Link
                         href={`/admin/contacts/${p.contactId}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="block truncate text-[13px] font-medium text-white hover:text-violet-300 hover:underline"
+                        className="block truncate text-[13.5px] font-medium text-white hover:text-violet-300 hover:underline"
                       >
                         {p.name}
                       </Link>
                     ) : (
-                      <div className="truncate text-[13px] font-medium text-white">{p.name}</div>
+                      <div className="truncate text-[13.5px] font-medium text-white">{p.name}</div>
                     )}
                     <div className="truncate text-[11px] text-white/35">
-                      {p.docs} doc{p.docs > 1 ? "s" : ""} out · last opened {relTime(p.lastViewed)}
+                      {p.docs} doc{p.docs > 1 ? "s" : ""} out · opened {relTime(p.lastViewed)}
                     </div>
                   </div>
                   <span
                     className={cn(
-                      "flex-none rounded-md px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-                      p.hasDeal ? "bg-emerald-400/10 text-emerald-300" : "bg-red-400/10 text-red-300",
+                      "flex-none rounded-md px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-wider",
+                      p.hasDeal ? "bg-white/5 text-white/50" : "border border-dashed border-white/15 text-white/35",
                     )}
                   >
                     {p.hasDeal ? "In pipe" : "No deal"}
                   </span>
-                  <ChevronRight size={12} className={cn("flex-none text-white/30 transition-transform", isOpen && "rotate-90")} />
+                  <ChevronRight size={12} className={cn("flex-none text-white/25 transition-transform", isOpen && "rotate-90")} />
                 </div>
                 {isOpen && (
-                  <div className="border-t border-dashed border-white/10 bg-white/[0.02] px-5 py-3">
+                  <div className="border-t border-dashed border-white/10 bg-white/[0.015] px-5 py-3">
                     <div className={cn(label, "mb-1.5")}>Docs sent</div>
                     {p.reports.map((r) => (
                       <a
@@ -688,13 +727,13 @@ function Prospects({ prospects }: { prospects: CommandProspect[] }) {
 
 export default function CommandView({ data }: { data: CommandResponse }) {
   return (
-    <div className="flex flex-col gap-6">
-      <KpiStrip kpis={data.kpis} />
+    <div className="flex flex-col gap-7">
+      <SummaryLine kpis={data.kpis} />
       <NeedsYou queue={data.queue} />
       <ClientRows clients={data.clients} queue={data.queue} />
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid grid-cols-1 gap-7 xl:grid-cols-[1.5fr_1fr]">
         <Pipeline stages={data.stages} deals={data.deals} />
-        <Prospects prospects={data.prospects} />
+        <WarmNow prospects={data.prospects} />
       </div>
       <p className="text-center text-[11px] text-white/25">
         Tell Zeke in Pingo to update any of this — move deals, log deliveries, attach links.

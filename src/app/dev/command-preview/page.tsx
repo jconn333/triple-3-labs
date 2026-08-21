@@ -25,17 +25,20 @@ const FIXTURE: CommandResponse = {
   },
   queue: [
     {
+      key: "billing:ml",
       severity: "crit",
       action: "Set up Sample Silo Co. billing",
       why: "$2,498/mo agreed, no Stripe customer yet",
       accountId: "ml",
     },
     {
+      key: "prospect:demo-chiropractic",
       severity: "crit",
       action: "Follow up Demo Chiropractic",
       why: "2 docs out, 11 views, opened recently — no deal in pipeline",
     },
     {
+      key: "kickoff:ml",
       severity: "warn",
       action: "Kick off Sample Silo Co.",
       why: "2 recurring commitments not anchored — onboarding/access pending",
