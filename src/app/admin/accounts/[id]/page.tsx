@@ -18,13 +18,15 @@ import CounterSignModal from "@/components/admin/CounterSignModal";
 import StartSubscriptionModal from "@/components/admin/StartSubscriptionModal";
 import SendOnboardingModal from "@/components/admin/SendOnboardingModal";
 import { getFormSpec } from "@/lib/onboarding/forms";
-import type { Account, Contract, Activity, SubscriptionSummary, InvoiceSummary, OnboardingRequest } from "@/lib/crm/types";
+import type { Account, Contract, Activity, Deal, SubscriptionSummary, InvoiceSummary, OnboardingRequest } from "@/lib/crm/types";
+import DealStageControl from "@/components/admin/DealStageControl";
 
 export default function AccountDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [account, setAccount] = useState<Account | null>(null);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]);
   const [subscriptions, setSubscriptions] = useState<SubscriptionSummary[]>([]);
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,7 @@ export default function AccountDetailPage() {
       setAccount(data.account);
       setContracts(data.contracts || []);
       setActivities(data.activities || []);
+      setDeals(data.deals || []);
       setNotes(data.account.notes || "");
     } catch {
       toast.error("Failed to load account");
@@ -346,6 +349,29 @@ export default function AccountDetailPage() {
               </a>
             )}
           </div>
+
+          {/* Deals */}
+          {deals.length > 0 && (
+            <div className="glass-card rounded-xl p-4">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Deals</h3>
+              <div className="space-y-2">
+                {deals.map((deal) => (
+                  <div key={deal.id} className="rounded-lg bg-white/[0.03] p-3">
+                    <p className="text-sm font-medium text-white">{deal.name}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      {deal.amount && (
+                        <span className="text-xs text-emerald-400">{formatCurrency(deal.amount)}</span>
+                      )}
+                      {deal.stage && (
+                        <span className="text-xs text-white/40">{(deal.stage as { name?: string }).name}</span>
+                      )}
+                    </div>
+                    <DealStageControl deal={deal} onChanged={fetchAccount} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right: Notes, Contracts, Subscriptions, Timeline */}

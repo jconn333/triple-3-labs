@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { formatDate, formatRelativeTime, formatCurrency } from "@/lib/utils/format";
 import LeadScoreBadge from "@/components/admin/LeadScoreBadge";
+import DealStageControl from "@/components/admin/DealStageControl";
 import type { Contact, Deal, Activity, Account } from "@/lib/crm/types";
 
 export default function ContactDetailPage() {
@@ -26,24 +27,25 @@ export default function ContactDetailPage() {
   const [creatingAccount, setCreatingAccount] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    async function fetchContact() {
-      try {
-        const res = await fetch(`/api/contacts/${id}`);
-        if (!res.ok) throw new Error("Failed to fetch");
-        const data = await res.json();
-        setContact(data.contact);
-        setDeals(data.deals || []);
-        setActivities(data.activities || []);
-        setAccount(data.account || null);
-      } catch {
-        toast.error("Failed to load contact");
-      } finally {
-        setLoading(false);
-      }
+  const fetchContact = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/contacts/${id}`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      setContact(data.contact);
+      setDeals(data.deals || []);
+      setActivities(data.activities || []);
+      setAccount(data.account || null);
+    } catch {
+      toast.error("Failed to load contact");
+    } finally {
+      setLoading(false);
     }
-    fetchContact();
   }, [id]);
+
+  useEffect(() => {
+    fetchContact();
+  }, [fetchContact]);
 
   async function handleDraftFollowUp() {
     setDraftingEmail(true);
@@ -271,6 +273,7 @@ export default function ContactDetailPage() {
                         <span className="text-xs text-white/40">{(deal.stage as any).name}</span>
                       )}
                     </div>
+                    <DealStageControl deal={deal} onChanged={fetchContact} />
                   </div>
                 ))}
               </div>

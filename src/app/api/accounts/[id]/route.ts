@@ -33,10 +33,22 @@ export async function GET(
     return NextResponse.json({ error: "Account not found" }, { status: 404 });
   }
 
+  // Deals belong to the account's contact — surface them so they can be closed
+  // (Won/Lost) from the account page without the pipeline board.
+  const contactId = (accountRes.data as { contact_id?: string | null }).contact_id;
+  const dealsRes = contactId
+    ? await supabase
+        .from("deals")
+        .select("*, stage:pipeline_stages(*)")
+        .eq("contact_id", contactId)
+        .order("created_at", { ascending: false })
+    : { data: [] as unknown[] };
+
   return NextResponse.json({
     account: accountRes.data,
     contracts: contractsRes.data || [],
     activities: activitiesRes.data || [],
+    deals: dealsRes.data || [],
   });
 }
 
