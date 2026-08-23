@@ -127,6 +127,15 @@ try {
   /* no sweep file — section is skipped with a note */
 }
 
+// ---------- PPC sweep (written by t3-ppc-sweep.mjs ~25 min earlier) ----------
+let ppc = null;
+try {
+  const raw = JSON.parse(readFileSync(join(repoRoot, ".t3-ppc.json"), "utf8"));
+  if (now.getTime() - new Date(raw.sweptAt).getTime() < 12 * 60 * 60 * 1000) ppc = raw;
+} catch {
+  /* no PPC file — section is skipped with a note */
+}
+
 // ---------- compose ----------
 const dateLabel = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 const lines = [
@@ -156,6 +165,22 @@ if (sweep) {
   lines.push("");
 } else {
   lines.push("🤖 Agents: no fresh sweep available (t3-agent-sweep did not run)");
+  lines.push("");
+}
+if (ppc) {
+  const d = new Date(`${ppc.date}T12:00:00`);
+  lines.push(`📣 ACL ads — ${d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`);
+  const conv = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+  for (const [name, p] of [["Google", ppc.google], ["Microsoft", ppc.microsoft]]) {
+    if (p?.ok) {
+      lines.push(`  • ${name}: $${p.spend.toFixed(2)} spend · ${p.clicks} clicks · ${conv(p.conversions)} conv · ${money(p.conversionValue)} value`);
+    } else {
+      lines.push(`  • ${name}: ⚠ pull failed (${(p?.error ?? "unknown").slice(0, 120)})`);
+    }
+  }
+  lines.push("");
+} else {
+  lines.push("📣 ACL ads: no fresh PPC sweep (t3-ppc-sweep did not run)");
   lines.push("");
 }
 if (readLines.length) {
