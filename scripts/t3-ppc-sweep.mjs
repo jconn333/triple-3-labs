@@ -31,6 +31,7 @@ const OUT = join(repoRoot, ".t3-ppc.json");
 
 const GOOGLE_ADS_CUSTOMER_ID = "8241161607"; // ACL Ad Campaigns (child; the MCC 403s)
 const GOOGLE_ADS_API_VERSION = "v22";
+const GOOGLE_PRIMARY_CONVERSION_ACTION = "Booking (native tag)";
 const MS_ACCOUNT_ID = 189330951; // Amish Country Lodging (G1074MWA)
 const MS_CUSTOMER_ID = 255003507;
 const MS_CONFIG_DIR = join(homedir(), ".config", "microsoft-ads");
@@ -72,37 +73,60 @@ async function pullGoogle() {
   const adc = JSON.parse(readFileSync(join(homedir(), ".config", "google-ads-adc.json"), "utf8"));
   const accessToken = await refreshGoogleToken(adc);
 
+  const search = async (query) => {
+    const res = await fetch(
+      `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers/${GOOGLE_ADS_CUSTOMER_ID}/googleAds:search`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "developer-token": devToken,
+          "login-customer-id": GOOGLE_ADS_CUSTOMER_ID,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query }),
+      }
+    );
+    if (!res.ok) throw new Error(`Google Ads search failed: HTTP ${res.status} ${(await res.text()).slice(0, 300)}`);
+    return (await res.json()).results ?? [];
+  };
+
   // The 8241161607 account also holds legacy Theater/Encore/Weddings campaigns;
   // the brief section is ACL-only, and ACL campaigns are all "ACL"-prefixed.
-  const query = `
-    SELECT campaign.name, metrics.cost_micros, metrics.clicks,
+  //
+  // Two queries because GAQL forbids click/cost metrics alongside conversion-
+  // action segments. Conversions are deduped to the "Booking (native tag)"
+  // action only — the account's Conversions column also counts the GA4
+  // purchase event, double-counting most bookings (Jeff, 2026-08-22).
+  const deliveryRows = await search(`
+    SELECT campaign.name, metrics.cost_micros, metrics.clicks
+    FROM campaign
+    WHERE segments.date = '${reportDate}' AND campaign.name LIKE 'ACL%'`);
+  const conversionRows = await search(`
+    SELECT campaign.name, segments.conversion_action_name,
            metrics.conversions, metrics.conversions_value
     FROM campaign
-    WHERE segments.date = '${reportDate}' AND campaign.name LIKE 'ACL%'`;
-  const res = await fetch(
-    `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers/${GOOGLE_ADS_CUSTOMER_ID}/googleAds:search`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "developer-token": devToken,
-        "login-customer-id": GOOGLE_ADS_CUSTOMER_ID,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ query }),
-    }
-  );
-  if (!res.ok) throw new Error(`Google Ads search failed: HTTP ${res.status} ${(await res.text()).slice(0, 300)}`);
-  const { results = [] } = await res.json();
+    WHERE segments.date = '${reportDate}' AND campaign.name LIKE 'ACL%'
+      AND segments.conversion_action_name = '${GOOGLE_PRIMARY_CONVERSION_ACTION}'`);
 
-  const campaigns = results.map((r) => ({
-    name: r.campaign?.name ?? "(unknown)",
-    spend: Number(r.metrics?.costMicros ?? 0) / 1_000_000,
-    clicks: Number(r.metrics?.clicks ?? 0),
-    conversions: Number(r.metrics?.conversions ?? 0),
-    conversionValue: Number(r.metrics?.conversionsValue ?? 0),
-  }));
-  return totals(campaigns);
+  const byName = new Map();
+  for (const r of deliveryRows) {
+    byName.set(r.campaign?.name ?? "(unknown)", {
+      name: r.campaign?.name ?? "(unknown)",
+      spend: Number(r.metrics?.costMicros ?? 0) / 1_000_000,
+      clicks: Number(r.metrics?.clicks ?? 0),
+      conversions: 0,
+      conversionValue: 0,
+    });
+  }
+  for (const r of conversionRows) {
+    const name = r.campaign?.name ?? "(unknown)";
+    const c = byName.get(name) ?? { name, spend: 0, clicks: 0, conversions: 0, conversionValue: 0 };
+    c.conversions += Number(r.metrics?.conversions ?? 0);
+    c.conversionValue += Number(r.metrics?.conversionsValue ?? 0);
+    byName.set(name, c);
+  }
+  return totals([...byName.values()]);
 }
 
 // ---------- Microsoft Advertising ----------
