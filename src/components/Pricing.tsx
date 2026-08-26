@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Zap, Check, Users, Target, RefreshCw } from "lucide-react";
+import { Zap, Check, Target, RefreshCw } from "lucide-react";
 
 /* ── Data ────────────────────────────────────────────────────────── */
 
@@ -62,12 +62,6 @@ const pricingTiers = [
       { text: "Dedicated Slack/text support", highlight: false },
     ],
   },
-];
-
-const discountTiers = [
-  { label: "1st Agent", value: "$1,500", sub: "Full setup", gradient: false },
-  { label: "2nd Agent", value: "$500", sub: "15% off retainer", gradient: true },
-  { label: "3rd+ Agent", value: "$500", sub: "20% off retainer", gradient: true },
 ];
 
 const roiStats = [
@@ -287,60 +281,6 @@ export default function Pricing() {
               />
             </motion.div>
           ))}
-        </motion.div>
-
-        {/* ── Multi-agent discounts ──────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-12 glass-card rounded-2xl p-6"
-        >
-          <div className="flex flex-col items-center gap-6 md:flex-row">
-            <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-violet to-purple p-3">
-                <Users size={22} className="text-white" />
-              </div>
-              <div>
-                <h3
-                  className="text-base font-semibold text-white"
-                  style={{ fontFamily: "var(--font-space-grotesk)" }}
-                >
-                  Need a second agent?
-                </h3>
-                <p className="mt-0.5 text-sm text-white/35">
-                  Buy a second package at a discount.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid flex-1 grid-cols-3">
-              {discountTiers.map((tier, i) => (
-                <div
-                  key={tier.label}
-                  className={`px-4 py-2 text-center ${
-                    i < discountTiers.length - 1
-                      ? "border-r border-white/[0.06]"
-                      : ""
-                  }`}
-                >
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
-                    {tier.label}
-                  </p>
-                  <p
-                    className={`text-lg font-bold ${
-                      tier.gradient ? "gradient-text" : "text-white"
-                    }`}
-                    style={{ fontFamily: "var(--font-space-grotesk)" }}
-                  >
-                    {tier.value}
-                  </p>
-                  <p className="text-xs text-white/30">{tier.sub}</p>
-                </div>
-              ))}
-            </div>
-          </div>
         </motion.div>
 
         {/* ── Included / Management ──────────────────────────────── */}
