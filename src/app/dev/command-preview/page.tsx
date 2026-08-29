@@ -14,6 +14,26 @@ const daysAhead = (n: number) => new Date(Date.now() + n * 86_400_000).toISOStri
 
 const FIXTURE: CommandResponse = {
   generatedAt: new Date().toISOString(),
+  revenue: {
+    lines: [
+      { bucket: "locked", name: "Sample Silo Co.", mrrNow: 2498, mrrMature: 2498, setupFee: 0, termMonths: null, stage: "active" },
+      { bucket: "locked", name: "Sample Stairworks", mrrNow: 1500, mrrMature: 1500, setupFee: null, termMonths: 6, stage: "active" },
+      { bucket: "pending", name: "Sample Exteriors — SEO+GBP+PPC", mrrNow: 1797, mrrMature: 1497, setupFee: 2500, termMonths: null, stage: "Proposal Sent" },
+      { bucket: "pending", name: "Sample Car Wash — SEO+GBP", mrrNow: 1298, mrrMature: 998, setupFee: 2000, termMonths: null, stage: "Proposal Sent" },
+    ],
+    rollup: {
+      lockedMrr: 3998,
+      pendingMrr: 3095,
+      totalPotentialMrr: 7093,
+      lockedArr: 47976,
+      potentialArr: 85116,
+      potentialArrMature: 77916,
+      lockedSetup: 0,
+      pendingSetup: 4500,
+      activeClients: 2,
+      openDeals: 2,
+    },
+  },
   agentsAvailable: true,
   // Static timestamps (not daysAgo()) — sub-second Date.now() drift between
   // the server and client renders shows up in title attrs as hydration noise.

@@ -116,8 +116,37 @@ export interface CommandAgent {
   lastTaskAt: string | null;
 }
 
+export interface CommandRevenueLine {
+  bucket: "locked" | "pending";
+  name: string;
+  mrrNow: number;
+  mrrMature: number | null; // MRR after any step-down; equals mrrNow when flat
+  setupFee: number | null;
+  termMonths: number | null;
+  stage: string; // "active" for locked; pipeline stage for pending
+}
+
+export interface CommandRevenueRollup {
+  lockedMrr: number;
+  pendingMrr: number;
+  totalPotentialMrr: number;
+  lockedArr: number;
+  potentialArr: number;
+  potentialArrMature: number;
+  lockedSetup: number;
+  pendingSetup: number;
+  activeClients: number;
+  openDeals: number;
+}
+
+export interface CommandRevenue {
+  lines: CommandRevenueLine[];
+  rollup: CommandRevenueRollup;
+}
+
 export interface CommandResponse {
   kpis: CommandKpis;
+  revenue: CommandRevenue;
   queue: QueueItem[];
   clients: CommandClient[];
   stages: CommandStage[];
@@ -524,6 +553,40 @@ export async function GET() {
   const visibleQueue = queue.filter((q) => !snoozedKeys.has(q.key));
   visibleQueue.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "crit" ? -1 : 1));
 
+  // ---------- revenue rollup (from vw_revenue_lines / vw_revenue_rollup) ----------
+  // Single source of truth for locked-vs-pending MRR + setup pipeline. Degrades
+  // to zeros/empty if the views are unreachable rather than 500-ing the page.
+  const [revLinesRes, revRollupRes] = await Promise.all([
+    supabase.from("vw_revenue_lines").select("*"),
+    supabase.from("vw_revenue_rollup").select("*").maybeSingle(),
+  ]);
+  const num = (v: unknown): number => (v === null || v === undefined ? 0 : Number(v));
+  const numOrNull = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
+  const rr = revRollupRes.data as Record<string, unknown> | null;
+  const revenue: CommandRevenue = {
+    lines: ((revLinesRes.data as Record<string, unknown>[] | null) ?? []).map((r) => ({
+      bucket: r.bucket === "locked" ? "locked" : "pending",
+      name: String(r.name ?? ""),
+      mrrNow: num(r.mrr_now),
+      mrrMature: numOrNull(r.mrr_mature),
+      setupFee: numOrNull(r.setup_fee),
+      termMonths: r.term_months === null || r.term_months === undefined ? null : Number(r.term_months),
+      stage: String(r.stage ?? ""),
+    })),
+    rollup: {
+      lockedMrr: num(rr?.locked_mrr),
+      pendingMrr: num(rr?.pending_mrr),
+      totalPotentialMrr: num(rr?.total_potential_mrr),
+      lockedArr: num(rr?.locked_arr),
+      potentialArr: num(rr?.potential_arr),
+      potentialArrMature: num(rr?.potential_arr_mature),
+      lockedSetup: num(rr?.locked_setup),
+      pendingSetup: num(rr?.pending_setup),
+      activeClients: num(rr?.active_clients),
+      openDeals: num(rr?.open_deals),
+    },
+  };
+
   // ---------- KPIs ----------
   const kpis: CommandKpis = {
     mrr: clients.reduce((s, c) => s + (c.mrr ?? 0), 0),
@@ -537,6 +600,7 @@ export async function GET() {
 
   const payload: CommandResponse = {
     kpis,
+    revenue,
     queue: visibleQueue,
     clients,
     stages: commandStages,

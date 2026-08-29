@@ -87,6 +87,100 @@ function SummaryLine({ kpis }: { kpis: CommandResponse["kpis"] }) {
   );
 }
 
+// ---------- on the books (MRR by client: active on top, pending beneath) ----------
+
+function RevenueTable({ revenue }: { revenue: CommandResponse["revenue"] }) {
+  const { lines, rollup } = revenue;
+  const locked = lines.filter((l) => l.bucket === "locked").sort((a, b) => b.mrrNow - a.mrrNow);
+  const pending = lines.filter((l) => l.bucket === "pending").sort((a, b) => b.mrrNow - a.mrrNow);
+
+  const GroupHeader = ({ left, right }: { left: string; right: string }) => (
+    <div className="flex items-center justify-between bg-white/[0.03] px-5 py-1.5">
+      <span className={label}>{left}</span>
+      <span className={label}>{right}</span>
+    </div>
+  );
+
+  const Row = ({ l }: { l: CommandResponse["revenue"]["lines"][number] }) => {
+    const stepsDown = l.mrrMature !== null && l.mrrMature !== l.mrrNow;
+    return (
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-2.5 hover:bg-white/[0.03]">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span
+            className={cn(
+              "h-1.5 w-1.5 shrink-0 rounded-full",
+              l.bucket === "locked" ? "bg-emerald-400" : "bg-white/25",
+            )}
+          />
+          <span className="truncate text-[13px] text-white/90">{l.name}</span>
+          <span className="shrink-0 text-[11px] text-white/35">
+            {l.bucket === "locked"
+              ? l.termMonths
+                ? `${l.termMonths}-mo retainer`
+                : "Active"
+              : l.stage}
+          </span>
+        </div>
+        <div className="text-right">
+          <span className="text-[13px] font-semibold tabular-nums text-white" style={heading}>
+            {money(l.mrrNow)}
+          </span>
+          <span className="text-[11px] text-white/40">/mo</span>
+          {stepsDown && (
+            <span className="ml-1.5 text-[11px] text-white/30">→ {money(l.mrrMature)}</span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <section>
+      <div className="mb-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <h2 className="text-sm font-semibold text-white" style={heading}>
+          On the books
+        </h2>
+        <div className="h-px min-w-6 flex-1 bg-white/10" />
+        <span className="text-[12px] text-white/45">
+          <b className="font-semibold text-emerald-300">{money(rollup.lockedMrr)}</b> locked
+          <span className="mx-2 text-white/20">·</span>
+          <b className="font-semibold text-white/70">{money(rollup.pendingMrr)}</b> pending
+          <span className="mx-2 text-white/20">·</span>
+          <b className="font-semibold text-white/70">{money(rollup.potentialArr)}</b> potential ARR
+        </span>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
+        <div className="divide-y divide-white/[0.06]">
+          <GroupHeader left={`Active · ${rollup.activeClients}`} right={money(rollup.lockedMrr)} />
+          {locked.length === 0 && (
+            <div className="px-5 py-4 text-center text-[13px] text-white/30">No active clients yet.</div>
+          )}
+          {locked.map((l) => (
+            <Row key={`l-${l.name}`} l={l} />
+          ))}
+
+          <GroupHeader left={`Pipeline · ${rollup.openDeals} pending`} right={money(rollup.pendingMrr)} />
+          {pending.length === 0 && (
+            <div className="px-5 py-4 text-center text-[13px] text-white/30">Nothing in the pipeline.</div>
+          )}
+          {pending.map((l) => (
+            <Row key={`p-${l.name}`} l={l} />
+          ))}
+
+          <div className="flex items-center justify-between bg-white/[0.03] px-5 py-2.5">
+            <span className="text-[13px] font-semibold text-white/80">Total potential</span>
+            <span className="text-[14px] font-bold tabular-nums text-white" style={heading}>
+              {money(rollup.totalPotentialMrr)}
+              <span className="text-[11px] font-normal text-white/40">/mo</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ---------- needs you (the focal point — collapsed by default, dismissible) ----------
 
 function NeedsYou({ queue }: { queue: QueueItem[] }) {
@@ -827,6 +921,7 @@ export default function CommandView({ data }: { data: CommandResponse }) {
     <div className="flex flex-col gap-7">
       <SummaryLine kpis={data.kpis} />
       <NeedsYou queue={data.queue} />
+      <RevenueTable revenue={data.revenue} />
       <ClientRows clients={data.clients} queue={data.queue} />
       <div className="grid grid-cols-1 gap-7 xl:grid-cols-[1.5fr_1fr]">
         <Pipeline stages={data.stages} deals={data.deals} />
