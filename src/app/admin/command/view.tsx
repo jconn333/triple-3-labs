@@ -921,7 +921,6 @@ export default function CommandView({ data }: { data: CommandResponse }) {
     <div className="flex flex-col gap-7">
       <SummaryLine kpis={data.kpis} />
       <NeedsYou queue={data.queue} />
-      <RevenueTable revenue={data.revenue} />
       <ClientRows clients={data.clients} queue={data.queue} />
       <div className="grid grid-cols-1 gap-7 xl:grid-cols-[1.5fr_1fr]">
         <Pipeline stages={data.stages} deals={data.deals} />
@@ -930,6 +929,7 @@ export default function CommandView({ data }: { data: CommandResponse }) {
           <AgentFleet agents={data.agents} available={data.agentsAvailable} />
         </div>
       </div>
+      <RevenueTable revenue={data.revenue} />
       <p className="text-center text-[11px] text-white/25">
         Tell Zeke in Pingo to update any of this — move deals, log deliveries, attach links.
       </p>
