@@ -79,12 +79,20 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Triple 3 Labs. All rights
             reserved.
           </p>
-          <Link
-            href="/privacy"
-            className="text-sm text-white/40 transition-colors hover:text-white/70"
-          >
-            Privacy Policy
-          </Link>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/privacy"
+              className="text-sm text-white/40 transition-colors hover:text-white/70"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/terms"
+              className="text-sm text-white/40 transition-colors hover:text-white/70"
+            >
+              Terms of Service
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
