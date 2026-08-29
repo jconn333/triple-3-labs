@@ -52,6 +52,13 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  // Google Search Console domain verification. Drop the token from the
+  // Search Console "HTML tag" method into GOOGLE_SITE_VERIFICATION (env) and
+  // redeploy — this renders the <meta name="google-site-verification"> tag.
+  // Needed to verify triple3labs.io as the OAuth consent screen's authorized domain.
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
+    : {}),
 };
 
 export default function RootLayout({

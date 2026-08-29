@@ -74,11 +74,17 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-white/5 pt-6">
+        <div className="mt-12 flex flex-col gap-3 border-t border-white/5 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-white/30">
             &copy; {new Date().getFullYear()} Triple 3 Labs. All rights
             reserved.
           </p>
+          <Link
+            href="/privacy"
+            className="text-sm text-white/40 transition-colors hover:text-white/70"
+          >
+            Privacy Policy
+          </Link>
         </div>
       </div>
     </footer>
