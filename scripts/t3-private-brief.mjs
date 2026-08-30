@@ -173,7 +173,9 @@ if (ppc) {
   const conv = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
   for (const [name, p] of [["Google", ppc.google], ["Microsoft", ppc.microsoft]]) {
     if (p?.ok) {
-      lines.push(`  • ${name}: $${p.spend.toFixed(2)} spend · ${p.clicks} clicks · ${conv(p.conversions)} conv · ${money(p.conversionValue)} value`);
+      // clicks is null when sourced from Supabase (the snapshot doesn't store it) — omit it then.
+      const clickBit = p.clicks == null ? "" : ` · ${p.clicks} clicks`;
+      lines.push(`  • ${name}: $${p.spend.toFixed(2)} spend${clickBit} · ${conv(p.conversions)} conv · ${money(p.conversionValue)} value`);
     } else {
       lines.push(`  • ${name}: ⚠ pull failed (${(p?.error ?? "unknown").slice(0, 120)})`);
     }
