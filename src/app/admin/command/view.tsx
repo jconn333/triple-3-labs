@@ -57,6 +57,8 @@ const LINK_KIND_LABEL: Record<string, string> = {
   ads_plan: "Ads plan",
   contract: "Contract",
   onboarding: "Onboard",
+  dossier: "Dossier",
+  code: "Code",
   other: "Doc",
 };
 

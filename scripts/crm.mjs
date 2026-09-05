@@ -9,14 +9,15 @@
 // Usage: node scripts/crm.mjs <command> [args]   (run from anywhere; env is
 // loaded from the repo's .env.local next to this script's parent dir)
 //
-//   find <query>                         search accounts / contacts / deals
+//   find <query>                         search accounts / contacts / deals (+ their dossier/code locations)
 //   status                               needs-you summary (reads only)
 //   move-deal <deal> <stage>             e.g. move-deal atwood "proposal sent"
 //   add-prospect <company> [opts]        --contact "First Last" --email a@b --phone n
 //                                        --deal "Name" --amount 1500 --note "..."
 //   add-deal <who> <deal name> [opts]    --amount 1500 --stage prospecting
 //   log <who> <text> [--type note]       timeline entry on account/deal/contact
-//   attach-link <who> <url> [opts]       --kind audit|proposal|report|website|ads_plan|contract|onboarding|other
+//   attach-link <who> <url> [opts]       --kind audit|proposal|report|website|ads_plan|contract|onboarding|dossier|code|other
+//                                        dossier = business docs folder (triple3-business), code = site/app source (repo or path)
 //                                        --title "..."   (triple3labs.io/r/<slug> auto-resolves)
 //   remove-link <link-id>                delete an attached link (corrections)
 //   record-delivery <account> <commitment> <summary> [--url u]
@@ -159,9 +160,14 @@ switch (cmd) {
       q(db.from("contacts").select("id,first_name,last_name,company,email").or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,company.ilike.%${query}%,email.ilike.%${query}%`), "contacts"),
       q(db.from("deals").select("id,name,amount, stage:pipeline_stages(name)").ilike("name", `%${query}%`), "deals"),
     ]);
-    for (const a of accounts) console.log(`account  ${a.name} · ${a.status} · $${a.mrr ?? "?"}/mo [${a.id}]`);
+    const ids = [...accounts.map((a) => a.id), ...deals.map((d) => d.id)];
+    const locs = ids.length
+      ? await q(db.from("client_links").select("account_id,deal_id,kind,url").in("kind", ["dossier", "code"]).or(`account_id.in.(${ids.join(",")}),deal_id.in.(${ids.join(",")})`), "locations")
+      : [];
+    const where = (id) => locs.filter((l) => l.account_id === id || l.deal_id === id).map((l) => `         ${l.kind.padEnd(7)} ${l.url}`).join("\n");
+    for (const a of accounts) console.log(`account  ${a.name} · ${a.status} · $${a.mrr ?? "?"}/mo [${a.id}]` + (where(a.id) ? `\n${where(a.id)}` : ""));
     for (const c of contacts) console.log(`contact  ${c.first_name} ${c.last_name} · ${c.company ?? "—"} · ${c.email} [${c.id}]`);
-    for (const d of deals) console.log(`deal     ${d.name} · ${d.stage?.name} · ${d.amount ? `$${d.amount}` : "TBD"} [${d.id}]`);
+    for (const d of deals) console.log(`deal     ${d.name} · ${d.stage?.name} · ${d.amount ? `$${d.amount}` : "TBD"} [${d.id}]` + (where(d.id) ? `\n${where(d.id)}` : ""));
     if (!accounts.length && !contacts.length && !deals.length) console.log("(no matches)");
     break;
   }
