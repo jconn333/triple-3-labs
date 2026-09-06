@@ -1,10 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import Link from "next/link";
-import { Eye, EyeOff, Trash2 } from "lucide-react";
-import { formatCurrency, formatRelativeTime } from "@/lib/utils/format";
+import { Trash2 } from "lucide-react";
+import { formatCurrency, daysInStage } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import type { Deal } from "@/lib/crm/types";
 
@@ -12,13 +12,23 @@ interface DealCardProps {
   deal: Deal;
   isDragOverlay?: boolean;
   onDelete?: (deal: Deal) => void;
+  onOpen?: (deal: Deal) => void;
 }
 
-export default function DealCard({ deal, isDragOverlay, onDelete }: DealCardProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: deal.id });
-
+/** Kanban card: name, who, amount, and the two signals that predict a close. */
+export default function DealCard({ deal, isDragOverlay, onDelete, onOpen }: DealCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: deal.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
+  const [now] = useState(() => Date.now());
+
+  const who = deal.contact
+    ? deal.contact.company || `${deal.contact.first_name} ${deal.contact.last_name}`.trim()
+    : null;
+  const age = daysInStage(deal.updated_at || deal.created_at);
+  const views = deal.report_engagement?.views ?? null;
+  const lastViewed = deal.report_engagement?.last_viewed_at ?? null;
+  const hot = lastViewed && now - new Date(lastViewed).getTime() < 3 * 86_400_000;
+  const quiet = age >= 7 && !hot;
 
   return (
     <div
@@ -26,10 +36,14 @@ export default function DealCard({ deal, isDragOverlay, onDelete }: DealCardProp
       style={style}
       {...attributes}
       {...listeners}
+      onClick={() => onOpen?.(deal)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && onOpen) onOpen(deal);
+      }}
       className={cn(
-        "glass-card group relative cursor-grab rounded-lg p-3 active:cursor-grabbing",
+        "group relative cursor-grab rounded-lg border border-line bg-surface px-3 py-2.5 text-sub transition-colors hover:border-line-strong active:cursor-grabbing",
         isDragging && "opacity-30",
-        isDragOverlay && "shadow-xl shadow-violet/20 rotate-2"
+        isDragOverlay && "rotate-1 shadow-pop",
       )}
     >
       {onDelete && !isDragOverlay && (
@@ -40,56 +54,30 @@ export default function DealCard({ deal, isDragOverlay, onDelete }: DealCardProp
             e.stopPropagation();
             onDelete(deal);
           }}
-          aria-label="Delete lead"
-          className="absolute right-1.5 top-1.5 rounded p-1 text-white/30 opacity-0 transition hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100 focus:opacity-100"
+          aria-label="Delete deal"
+          className="absolute right-1.5 top-1.5 rounded p-1 text-ink-3 opacity-0 transition hover:bg-bad-soft hover:text-bad focus:opacity-100 group-hover:opacity-100"
         >
-          <Trash2 size={12} />
+          <Trash2 size={13} />
         </button>
       )}
 
-      <p className="pr-5 text-sm font-medium text-white leading-tight">{deal.name}</p>
+      <p className="pr-5 text-sm font-medium leading-snug text-ink">{deal.name}</p>
 
-      {deal.amount && (
-        <p className="mt-1 text-xs font-semibold text-emerald-400">
-          {formatCurrency(deal.amount)}
-        </p>
-      )}
+      <div className="mt-1 flex items-center gap-2 text-ink-3">
+        <span className="min-w-0 flex-1 truncate">{who ?? "—"}</span>
+        <span className="shrink-0 font-medium tabular-nums text-ink">{deal.amount ? formatCurrency(deal.amount) : ""}</span>
+      </div>
 
-      {deal.report_engagement && (
-        deal.report_engagement.views > 0 ? (
-          <a
-            href={`https://triple3labs.io/r/${deal.report_engagement.slug}`}
-            target="_blank"
-            rel="noopener"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-            className="mt-1.5 flex w-fit items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 hover:bg-emerald-500/20"
-          >
-            <Eye size={10} />
-            Report opened ×{deal.report_engagement.views}
-            {deal.report_engagement.last_viewed_at && (
-              <span className="text-emerald-400/60">
-                · {formatRelativeTime(deal.report_engagement.last_viewed_at)}
-              </span>
-            )}
-          </a>
-        ) : (
-          <span className="mt-1.5 flex w-fit items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-white/35">
-            <EyeOff size={10} />
-            Report not opened yet
+      <div className="mt-1.5 flex items-center gap-2 text-xs">
+        <span className={cn("tabular-nums", quiet ? "font-medium text-warn" : "text-ink-3")}>
+          {age === 0 ? "today" : `${age}d in stage`}
+        </span>
+        <span className="flex-1" />
+        {views !== null && (
+          <span className={cn("tabular-nums", hot ? "font-medium text-good" : "text-ink-3")}>
+            {views > 0 ? `${views} report ${views === 1 ? "view" : "views"}` : "report unopened"}
           </span>
-        )
-      )}
-
-      <div className="mt-2 flex items-center justify-between">
-        {deal.contact_id ? (
-          <Link href={`/admin/contacts/${deal.contact_id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="text-[10px] text-violet hover:underline">
-            View contact
-          </Link>
-        ) : <span />}
-        <span className="text-[10px] text-white/30">{formatRelativeTime(deal.created_at)}</span>
+        )}
       </div>
     </div>
   );

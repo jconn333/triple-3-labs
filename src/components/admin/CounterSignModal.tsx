@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, PenLine, X } from "lucide-react";
+import { PenLine } from "lucide-react";
 import type { Contract } from "@/lib/crm/types";
+import { Button, Field, Input, Modal } from "@/components/ui";
 
 const CONSENT_TEXT =
   "I agree to conduct this transaction electronically and to be legally bound by my " +
@@ -122,118 +123,87 @@ export default function CounterSignModal({
   const isPdf = contract.mime_type === "application/pdf";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="glass-card w-full max-w-lg rounded-2xl p-6 space-y-5">
-        <div className="flex items-center justify-between">
-          <h3
-            className="text-lg font-bold text-white"
-            style={{ fontFamily: "var(--font-space-grotesk)" }}
-          >
-            Counter-sign as JMC
-          </h3>
-          <button onClick={onClose} className="text-white/40 hover:text-white/60">
-            <X size={20} />
-          </button>
-        </div>
-
-        <p className="text-sm text-white/50">
-          {contract.title} <span className="text-white/30">· {contract.file_name}</span>
-        </p>
-
-        {!isPdf ? (
-          <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-300">
-            Only PDF contracts can be signed. Export to PDF and re-upload first.
-          </p>
-        ) : (
+    <Modal
+      title="Counter-sign as JMC"
+      description={
+        <>
+          {contract.title} <span className="text-ink-3">· {contract.file_name}</span>
+        </>
+      }
+      onClose={onClose}
+      footer={
+        isPdf ? (
           <>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-white/60">
-                  Your name
-                </label>
-                <input
-                  value={typedName}
-                  onChange={(e) => setTypedName(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-violet/50"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-white/60">Title</label>
-                <input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Managing Member"
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-violet/50"
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="block text-sm font-medium text-white/60">
-                  Draw your signature (optional)
-                </label>
-                <button
-                  type="button"
-                  onClick={clearCanvas}
-                  className="text-xs text-white/40 hover:text-white/70"
-                >
-                  Clear
-                </button>
-              </div>
-              <canvas
-                ref={canvasRef}
-                onPointerDown={startDraw}
-                onPointerMove={moveDraw}
-                onPointerUp={endDraw}
-                onPointerLeave={endDraw}
-                className="h-32 w-full touch-none rounded-lg border border-dashed border-white/20 bg-white"
-              />
-              <p className="mt-1 text-[11px] text-white/30">
-                If you skip drawing, your typed name is used as the signature.
-              </p>
-            </div>
-
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg bg-white/[0.03] p-4">
-              <input
-                type="checkbox"
-                checked={consent}
-                onChange={(e) => setConsent(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-violet-500"
-              />
-              <span className="text-xs leading-relaxed text-white/60">{CONSENT_TEXT}</span>
-            </label>
-
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 rounded-lg border border-white/10 px-4 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSign}
-                disabled={!consent || typedName.trim().length < 2 || signing}
-                className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-violet to-purple px-4 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-[0_0_20px_rgba(124,58,237,0.4)] disabled:opacity-50"
-              >
-                {signing ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" /> Signing...
-                  </>
-                ) : (
-                  <>
-                    <PenLine size={16} /> Sign as JMC
-                  </>
-                )}
-              </button>
-            </div>
-
-            <p className="text-center text-[11px] text-white/25">
-              Your IP, timestamp, and a hash of the document are recorded on a signature certificate.
-            </p>
+            <Button variant="secondary" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSign}
+              disabled={!consent || typedName.trim().length < 2}
+              loading={signing}
+            >
+              {!signing && <PenLine size={14} />}
+              Sign as JMC
+            </Button>
           </>
-        )}
-      </div>
-    </div>
+        ) : (
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        )
+      }
+    >
+      {!isPdf ? (
+        <p className="rounded-lg border border-warn/40 bg-warn-soft p-3 text-sm text-warn">
+          Only PDF contracts can be signed. Export to PDF and re-upload first.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Your name">
+              <Input value={typedName} onChange={(e) => setTypedName(e.target.value)} />
+            </Field>
+            <Field label="Title">
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Managing Member" />
+            </Field>
+          </div>
+
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="block text-xs font-medium text-ink-2">Draw your signature (optional)</label>
+              <button type="button" onClick={clearCanvas} className="text-xs text-ink-3 hover:text-ink">
+                Clear
+              </button>
+            </div>
+            <canvas
+              ref={canvasRef}
+              onPointerDown={startDraw}
+              onPointerMove={moveDraw}
+              onPointerUp={endDraw}
+              onPointerLeave={endDraw}
+              className="h-32 w-full touch-none rounded-lg border border-dashed border-line-strong bg-ground"
+            />
+            <p className="mt-1 text-xs text-ink-3">
+              If you skip drawing, your typed name is used as the signature.
+            </p>
+          </div>
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg bg-surface-2 p-4">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
+            />
+            <span className="text-xs leading-relaxed text-ink-2">{CONSENT_TEXT}</span>
+          </label>
+
+          <p className="text-center text-xs text-ink-3">
+            Your IP, timestamp, and a hash of the document are recorded on a signature certificate.
+          </p>
+        </div>
+      )}
+    </Modal>
   );
 }

@@ -9,6 +9,104 @@
   --color-cyan: #06b6d4;
   --color-pink: #f472b6;
   --color-purple: #a855f7;
+
+  /* ---- Admin (CRM) design tokens ----------------------------------------
+     Resolved at use time from the .admin scope below, so `bg-surface`,
+     `text-ink-2`, `border-line` etc. follow the admin theme (light by
+     default, dark via [data-theme="dark"]) without touching the marketing
+     site's palette. Color = state: good / warn / bad are the only hues
+     besides the single accent. */
+  --color-ground: var(--admin-ground);
+  --color-surface: var(--admin-surface);
+  --color-surface-2: var(--admin-surface-2);
+  --color-line: var(--admin-line);
+  --color-line-strong: var(--admin-line-strong);
+  --color-ink: var(--admin-ink);
+  --color-ink-2: var(--admin-ink-2);
+  --color-ink-3: var(--admin-ink-3);
+  --color-accent: var(--admin-accent);
+  --color-accent-soft: var(--admin-accent-soft);
+  --color-accent-ink: var(--admin-accent-ink);
+  --color-good: var(--admin-good);
+  --color-good-soft: var(--admin-good-soft);
+  --color-warn: var(--admin-warn);
+  --color-warn-soft: var(--admin-warn-soft);
+  --color-bad: var(--admin-bad);
+  --color-bad-soft: var(--admin-bad-soft);
+  --font-ui: var(--font-geist);
+  --font-ui-mono: var(--font-geist-mono);
+  --text-sub: 13px;
+  --text-sub--line-height: 1.4;
+  --shadow-pop: var(--admin-shadow-pop);
+}
+
+/* ---- Admin scope: light by default, dark on request ---------------------- */
+.admin {
+  --admin-ground: #f6f6f8;
+  --admin-surface: #ffffff;
+  --admin-surface-2: #f1f1f4;
+  --admin-line: #e3e3e9;
+  --admin-line-strong: #cfcfd8;
+  --admin-ink: #17171f;
+  --admin-ink-2: #565a6b;
+  --admin-ink-3: #8a8e9e;
+  --admin-accent: #5850ec;
+  --admin-accent-soft: #eeedfd;
+  --admin-accent-ink: #4038c7;
+  --admin-good: #1e8e5a;
+  --admin-good-soft: #e4f5ec;
+  --admin-warn: #b4740f;
+  --admin-warn-soft: #fbf1dc;
+  --admin-bad: #d03a3f;
+  --admin-bad-soft: #fbe7e8;
+  --admin-shadow-pop: 0 1px 2px rgba(23, 23, 31, 0.06), 0 12px 32px -12px rgba(23, 23, 31, 0.28);
+  color-scheme: light;
+  background: var(--admin-ground);
+  color: var(--admin-ink);
+  font-family: var(--font-geist), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin[data-theme="dark"] {
+  --admin-ground: #111114;
+  --admin-surface: #18181c;
+  --admin-surface-2: #1f1f25;
+  --admin-line: #2a2a32;
+  --admin-line-strong: #3a3a45;
+  --admin-ink: #ececf1;
+  --admin-ink-2: #a3a6b5;
+  --admin-ink-3: #6e7180;
+  --admin-accent: #8b84f5;
+  --admin-accent-soft: #26244a;
+  --admin-accent-ink: #b4affa;
+  --admin-good: #4cc58a;
+  --admin-good-soft: #14301f;
+  --admin-warn: #e0a339;
+  --admin-warn-soft: #33270e;
+  --admin-bad: #f06a6e;
+  --admin-bad-soft: #3a1a1c;
+  --admin-shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -12px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+.admin ::-webkit-scrollbar { width: 8px; height: 8px; }
+.admin ::-webkit-scrollbar-track { background: transparent; }
+.admin ::-webkit-scrollbar-thumb { background: var(--admin-line-strong); border-radius: 4px; }
+.admin ::-webkit-scrollbar-thumb:hover { background: var(--admin-ink-3); }
+
+.admin :focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 2px;
+}
+
+/* Native selects in the admin get the theme's arrow color, not the OS default on dark. */
+.admin select { color-scheme: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin * { transition: none !important; animation: none !important; }
 }
 
 *,

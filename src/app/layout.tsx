@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
-import { Toaster } from "sonner";
+import { Inter, Space_Grotesk, Geist, Geist_Mono } from "next/font/google";
+import ThemedToaster from "@/components/ThemedToaster";
 import MotionProvider from "@/components/MotionProvider";
 import "./globals.css";
 
@@ -11,6 +11,17 @@ const inter = Inter({
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
+  subsets: ["latin"],
+});
+
+// Admin (CRM) interface faces. The marketing site keeps Inter + Space Grotesk.
+const geist = Geist({
+  variable: "--font-geist",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
@@ -69,10 +80,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${spaceGrotesk.variable} antialiased`}
+        className={`${inter.variable} ${spaceGrotesk.variable} ${geist.variable} ${geistMono.variable} antialiased`}
       >
         <MotionProvider>{children}</MotionProvider>
-        <Toaster theme="dark" position="bottom-right" richColors />
+        <ThemedToaster />
       </body>
     </html>
   );

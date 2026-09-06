@@ -6,7 +6,7 @@
 // Returns 404 outside development.
 
 import { notFound } from "next/navigation";
-import CommandView from "@/app/admin/command/view";
+import HomeView from "@/app/admin/view";
 import type { CommandResponse } from "@/app/api/command/route";
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
@@ -225,8 +225,8 @@ const FIXTURE: CommandResponse = {
 export default function CommandPreviewPage() {
   if (process.env.NODE_ENV !== "development") notFound();
   return (
-    <div className="min-h-screen bg-background p-8">
-      <CommandView data={FIXTURE} />
+    <div className="admin min-h-screen p-8">
+      <HomeView data={FIXTURE} />
     </div>
   );
 }

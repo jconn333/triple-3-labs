@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils/cn";
+import { Button } from "@/components/ui";
 import type { Deal, PipelineStage } from "@/lib/crm/types";
 
 // Close (or reopen) a deal without visiting the pipeline board. Used on both the
@@ -79,45 +80,25 @@ export default function DealStageControl({
     }
   }
 
-  const btn =
-    "rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-40";
-
   return (
-    <div className="mt-2.5 flex items-center gap-1.5 border-t border-white/5 pt-2.5">
+    <div className="mt-2.5 flex items-center gap-1.5 border-t border-line pt-2.5">
       {!isClosed ? (
         <>
-          <button
-            onClick={() => moveTo(byName("Won"), "marked won")}
-            disabled={busy}
-            className={cn(btn, "bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/20")}
-          >
+          <Button variant="primary" size="sm" disabled={busy} onClick={() => moveTo(byName("Won"), "marked won")}>
             Mark won
-          </button>
-          <button
-            onClick={() => moveTo(byName("Lost"), "marked lost")}
-            disabled={busy}
-            className={cn(btn, "border border-white/10 text-white/50 hover:border-red-400/30 hover:bg-red-400/[0.07] hover:text-red-300")}
-          >
+          </Button>
+          <Button variant="danger" size="sm" disabled={busy} onClick={() => moveTo(byName("Lost"), "marked lost")}>
             Mark lost
-          </button>
+          </Button>
         </>
       ) : (
         <>
-          <span
-            className={cn(
-              "rounded-md px-2.5 py-1 text-[11px] font-semibold",
-              isWon ? "bg-emerald-400/10 text-emerald-300" : "bg-white/5 text-white/45",
-            )}
-          >
-            {isWon ? "✓ Won" : "Lost"}
+          <span className={cn("text-sub font-medium", isWon ? "text-good" : "text-ink-3")}>
+            {isWon ? "Won" : "Lost"}
           </span>
-          <button
-            onClick={() => moveTo(reopenStage, "reopened")}
-            disabled={busy}
-            className={cn(btn, "text-white/40 hover:bg-white/5 hover:text-white/70")}
-          >
+          <Button variant="secondary" size="sm" disabled={busy} onClick={() => moveTo(reopenStage, "reopened")}>
             Reopen
-          </button>
+          </Button>
         </>
       )}
     </div>

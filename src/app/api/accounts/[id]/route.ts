@@ -44,11 +44,57 @@ export async function GET(
         .order("created_at", { ascending: false })
     : { data: [] as unknown[] };
 
+  // Commitments (what we owe them), deliveries (what was done), and attached
+  // docs/links — so the client page can show the whole relationship.
+  const [commitmentsRes, linksRes] = await Promise.all([
+    supabase.from("commitments").select("*").eq("account_id", id).order("next_due", { ascending: true, nullsFirst: false }),
+    supabase.from("client_links").select("*").eq("account_id", id).order("created_at", { ascending: true }),
+  ]);
+  const commitments = (commitmentsRes.data ?? []) as Record<string, unknown>[];
+  const links = (linksRes.data ?? []) as Record<string, unknown>[];
+
+  const commitmentIds = commitments.map((c) => c.id as string);
+  const deliveriesRes = commitmentIds.length
+    ? await supabase
+        .from("deliveries")
+        .select("*")
+        .in("commitment_id", commitmentIds)
+        .order("delivered_at", { ascending: false })
+        .limit(100)
+    : { data: [] as Record<string, unknown>[] };
+
+  const reportIds = links.map((l) => l.prospect_report_id as string | null).filter((x): x is string => !!x);
+  const viewsRes = reportIds.length
+    ? await supabase.from("report_views").select("report_id,viewed_at").in("report_id", reportIds)
+    : { data: [] as { report_id: string; viewed_at: string }[] };
+  const viewsByReport = new Map<string, { count: number; last: string | null }>();
+  for (const v of (viewsRes.data ?? []) as { report_id: string; viewed_at: string }[]) {
+    const cur = viewsByReport.get(v.report_id) ?? { count: 0, last: null };
+    cur.count += 1;
+    if (!cur.last || v.viewed_at > cur.last) cur.last = v.viewed_at;
+    viewsByReport.set(v.report_id, cur);
+  }
+
   return NextResponse.json({
     account: accountRes.data,
     contracts: contractsRes.data || [],
     activities: activitiesRes.data || [],
     deals: dealsRes.data || [],
+    commitments,
+    deliveries: deliveriesRes.data ?? [],
+    links: links.map((l) => {
+      const rid = l.prospect_report_id as string | null;
+      const v = rid ? viewsByReport.get(rid) : undefined;
+      return {
+        id: l.id,
+        kind: l.kind,
+        title: l.title,
+        url: l.url,
+        views: rid ? (v?.count ?? 0) : null,
+        lastViewed: v?.last ?? null,
+        createdAt: l.created_at,
+      };
+    }),
   });
 }
 

@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import BlogPostForm from "@/components/admin/blog/BlogPostForm";
 import type { BlogPost } from "@/lib/blog/types";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { EmptyState, PanelSkeleton } from "@/components/ui";
 
 export default function EditBlogPostPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,27 +29,16 @@ export default function EditBlogPostPage() {
     fetchPost();
   }, [id]);
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="h-4 w-32 animate-pulse rounded bg-white/5" />
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="h-12 animate-pulse rounded-lg bg-white/5" />
-          <div className="h-12 animate-pulse rounded-lg bg-white/5" />
-        </div>
-        <div className="h-24 animate-pulse rounded-lg bg-white/5" />
-        <div className="h-96 animate-pulse rounded-xl bg-white/5" />
-      </div>
-    );
-  }
-
-  if (!post) {
-    return (
-      <div className="glass-card rounded-xl p-8 text-center text-white/50">
-        Post not found.
-      </div>
-    );
-  }
-
-  return <BlogPostForm post={post} />;
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader title={post?.title || "Edit post"} crumb={{ label: "Blog posts", href: "/admin/blog" }} />
+      {loading ? (
+        <PanelSkeleton rows={6} />
+      ) : !post ? (
+        <EmptyState title="Post not found" />
+      ) : (
+        <BlogPostForm post={post} />
+      )}
+    </div>
+  );
 }

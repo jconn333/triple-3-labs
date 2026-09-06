@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { LogoIcon } from "@/components/Logo";
+import { Button, Field, Input } from "@/components/ui";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -34,78 +35,42 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      {/* Background glows */}
-      <div className="pointer-events-none fixed inset-0">
-        <div className="absolute left-1/3 top-1/3 h-[600px] w-[600px] rounded-full bg-violet/5 blur-[128px]" />
-        <div className="absolute right-1/3 bottom-1/3 h-[400px] w-[400px] rounded-full bg-cyan/5 blur-[128px]" />
-      </div>
-
-      <div className="relative w-full max-w-sm">
-        {/* Logo */}
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <LogoIcon size={48} />
-          <h1
-            className="text-2xl font-bold text-white"
-            style={{ fontFamily: "var(--font-space-grotesk)" }}
-          >
-            Triple 3 <span className="gradient-text">Labs</span>
-          </h1>
-          <p className="text-sm text-white/40">Admin Dashboard</p>
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-[360px] rounded-lg border border-line bg-surface p-6 shadow-pop">
+        <div className="mb-6 flex flex-col items-center gap-2 text-center">
+          <LogoIcon size={40} idPrefix="admin-login" />
+          <h1 className="text-base font-semibold text-ink">Triple 3 Labs</h1>
+          <p className="text-sub text-ink-2">Sign in to the CRM</p>
         </div>
 
-        {/* Login form */}
-        <form
-          onSubmit={handleSubmit}
-          className="glass-card rounded-2xl p-8 space-y-5"
-        >
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-1.5 block text-sm font-medium text-white/60"
-            >
-              Email
-            </label>
-            <input
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Field label="Email" htmlFor="email">
+            <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-violet/50 focus:ring-1 focus:ring-violet/50"
               placeholder="hello@triple3labs.io"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-1.5 block text-sm font-medium text-white/60"
-            >
-              Password
-            </label>
-            <input
+          <Field label="Password" htmlFor="password">
+            <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-violet/50 focus:ring-1 focus:ring-violet/50"
               placeholder="Enter password"
             />
-          </div>
+          </Field>
 
-          {error && (
-            <p className="text-sm text-red-400">{error}</p>
-          )}
+          {error && <p className="text-sub text-bad">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-gradient-to-r from-violet to-purple px-4 py-3 text-sm font-semibold text-white transition-all hover:shadow-[0_0_20px_rgba(124,58,237,0.4)] disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
+          <Button type="submit" variant="primary" className="w-full" disabled={loading} loading={loading}>
+            {loading ? "Signing in…" : "Sign in"}
+          </Button>
         </form>
       </div>
     </div>

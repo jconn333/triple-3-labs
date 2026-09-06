@@ -2,7 +2,9 @@
 
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import { Upload, X, FileText, Loader2 } from "lucide-react";
+import { Upload, X, FileText } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
+import { Button, Field, Input, Modal, Textarea } from "@/components/ui";
 
 interface ContractUploadModalProps {
   accountId: string;
@@ -75,26 +77,38 @@ export default function ContractUploadModal({ accountId, onClose, onUploaded }: 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="glass-card w-full max-w-lg rounded-2xl p-6 space-y-5">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-white" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-            Upload Contract
-          </h3>
-          <button onClick={onClose} className="text-white/40 hover:text-white/60">
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Drop zone */}
+    <Modal
+      title="Upload contract"
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleUpload} disabled={!file || !title.trim()} loading={uploading}>
+            {!uploading && <Upload size={14} />}
+            Upload
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
         <div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
-            dragOver ? "border-violet/50 bg-violet/5" : file ? "border-emerald-500/30 bg-emerald-500/5" : "border-white/10 hover:border-white/20"
-          }`}
+          className={cn(
+            "cursor-pointer rounded-lg border border-dashed p-8 text-center transition-colors",
+            dragOver
+              ? "border-accent bg-accent-soft"
+              : file
+                ? "border-good/40 bg-good-soft"
+                : "border-line-strong bg-ground hover:border-ink-3",
+          )}
         >
           <input
             ref={fileInputRef}
@@ -105,64 +119,44 @@ export default function ContractUploadModal({ accountId, onClose, onUploaded }: 
           />
           {file ? (
             <div className="flex items-center justify-center gap-3">
-              <FileText size={24} className="text-emerald-400" />
+              <FileText size={22} className="text-good" />
               <div className="text-left">
-                <p className="text-sm font-medium text-white">{file.name}</p>
-                <p className="text-xs text-white/40">{(file.size / 1024).toFixed(0)} KB</p>
+                <p className="text-sm font-medium text-ink">{file.name}</p>
+                <p className="text-sub text-ink-2">{(file.size / 1024).toFixed(0)} KB</p>
               </div>
               <button
-                onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                className="ml-2 text-white/30 hover:text-white/60"
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFile(null);
+                }}
+                className="ml-2 text-ink-3 hover:text-ink"
               >
                 <X size={16} />
               </button>
             </div>
           ) : (
             <>
-              <Upload size={32} className="mx-auto mb-2 text-white/20" />
-              <p className="text-sm text-white/50">Drop a file here or click to browse</p>
-              <p className="mt-1 text-xs text-white/30">PDF, DOC, DOCX up to 10MB</p>
+              <Upload size={28} className="mx-auto mb-2 text-ink-3" />
+              <p className="text-sm text-ink-2">Drop a file here or click to browse</p>
+              <p className="mt-1 text-sub text-ink-3">PDF, DOC, DOCX up to 10MB</p>
             </>
           )}
         </div>
 
-        {/* Title */}
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-white/60">Title</label>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Service Agreement"
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-violet/50"
-          />
-        </div>
+        <Field label="Title">
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Service Agreement" />
+        </Field>
 
-        {/* Description */}
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-white/60">Description (optional)</label>
-          <textarea
+        <Field label="Description (optional)">
+          <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Notes about this contract..."
             rows={2}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-violet/50 resize-none"
           />
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 rounded-lg border border-white/10 px-4 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors">
-            Cancel
-          </button>
-          <button
-            onClick={handleUpload}
-            disabled={!file || !title.trim() || uploading}
-            className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-violet to-purple px-4 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-[0_0_20px_rgba(124,58,237,0.4)] disabled:opacity-50"
-          >
-            {uploading ? <><Loader2 size={16} className="animate-spin" /> Uploading...</> : <><Upload size={16} /> Upload</>}
-          </button>
-        </div>
+        </Field>
       </div>
-    </div>
+    </Modal>
   );
 }

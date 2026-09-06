@@ -24,6 +24,7 @@ import {
   Redo,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { Button } from "@/components/ui";
 
 interface TipTapEditorProps {
   content: string;
@@ -42,19 +43,16 @@ function ToolbarButton({
   title: string;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon-sm"
       onClick={onClick}
       title={title}
-      className={cn(
-        "rounded p-1.5 transition-colors",
-        isActive
-          ? "bg-violet-500/20 text-violet-400"
-          : "text-white/40 hover:bg-white/5 hover:text-white/60"
-      )}
+      className={cn(isActive && "bg-accent-soft text-accent-ink hover:bg-accent-soft hover:text-accent-ink")}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -79,8 +77,7 @@ export default function TipTapEditor({ content, onChange }: TipTapEditorProps) {
     },
     editorProps: {
       attributes: {
-        class:
-          "min-h-[400px] outline-none px-6 py-4 text-sm text-white/80 leading-relaxed",
+        class: "min-h-[400px] outline-none text-sm text-ink leading-relaxed",
       },
     },
   });
@@ -127,9 +124,9 @@ export default function TipTapEditor({ content, onChange }: TipTapEditorProps) {
   if (!editor) return null;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
+    <div className="overflow-hidden rounded-lg border border-line-strong bg-surface">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-white/10 px-3 py-2">
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-line px-3 py-2">
         <ToolbarButton
           onClick={() =>
             editor.chain().focus().toggleHeading({ level: 1 }).run()
@@ -158,7 +155,7 @@ export default function TipTapEditor({ content, onChange }: TipTapEditorProps) {
           <Heading3 size={16} />
         </ToolbarButton>
 
-        <div className="mx-1 h-5 w-px bg-white/10" />
+        <div className="mx-1 h-5 w-px bg-line" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -175,7 +172,7 @@ export default function TipTapEditor({ content, onChange }: TipTapEditorProps) {
           <Italic size={16} />
         </ToolbarButton>
 
-        <div className="mx-1 h-5 w-px bg-white/10" />
+        <div className="mx-1 h-5 w-px bg-line" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -206,7 +203,7 @@ export default function TipTapEditor({ content, onChange }: TipTapEditorProps) {
           <Code size={16} />
         </ToolbarButton>
 
-        <div className="mx-1 h-5 w-px bg-white/10" />
+        <div className="mx-1 h-5 w-px bg-line" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().setHorizontalRule().run()}
@@ -228,7 +225,7 @@ export default function TipTapEditor({ content, onChange }: TipTapEditorProps) {
           <ImageIcon size={16} />
         </ToolbarButton>
 
-        <div className="mx-1 h-5 w-px bg-white/10" />
+        <div className="mx-1 h-5 w-px bg-line" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
@@ -258,7 +255,9 @@ export default function TipTapEditor({ content, onChange }: TipTapEditorProps) {
       />
 
       {/* Editor area */}
-      <EditorContent editor={editor} />
+      <div className="p-4">
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 }

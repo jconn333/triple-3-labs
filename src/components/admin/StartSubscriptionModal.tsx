@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CalendarClock, Loader2, X } from "lucide-react";
+import { CalendarClock } from "lucide-react";
+import { Button, Modal } from "@/components/ui";
 
 interface Preview {
   eligible: boolean;
@@ -61,81 +62,62 @@ export default function StartSubscriptionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="glass-card w-full max-w-md rounded-2xl p-6 space-y-5">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-white" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-            Start Monthly Subscription
-          </h3>
-          <button onClick={onClose} className="text-white/40 hover:text-white/60">
-            <X size={20} />
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center gap-2 py-8 text-sm text-white/50">
-            <Loader2 size={16} className="animate-spin" /> Checking Stripe…
-          </div>
-        ) : !preview?.eligible ? (
-          <>
-            <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-300">
-              {preview?.reason || "Not eligible to start a subscription."}
-            </p>
-            <button
-              onClick={onClose}
-              className="w-full rounded-lg border border-white/10 px-4 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors"
-            >
-              Close
-            </button>
-          </>
+    <Modal
+      title="Start monthly subscription"
+      onClose={onClose}
+      size="sm"
+      footer={
+        loading ? undefined : !preview?.eligible ? (
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
         ) : (
           <>
-            <div className="space-y-3 rounded-lg bg-white/[0.03] p-4 text-sm">
-              <div className="flex justify-between">
-                <span className="text-white/40">Account</span>
-                <span className="text-white">{accountName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/40">Payment method on file</span>
-                <span className="text-white capitalize">{preview.method?.label}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/40">Monthly charge</span>
-                <span className="font-semibold text-white">
-                  {amount}/mo{preview.method?.rail === "card" ? " (incl. 3% card fee)" : ""}
-                </span>
-              </div>
-            </div>
-
-            <p className="flex items-start gap-2 text-xs leading-relaxed text-white/40">
-              <CalendarClock size={14} className="mt-0.5 shrink-0" />
-              Today becomes the Service Start Date: the saved payment method is charged
-              immediately and on this day of each month going forward. Stripe emails the
-              client a receipt each cycle.
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 rounded-lg border border-white/10 px-4 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleStart}
-                disabled={starting}
-                className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-violet to-purple px-4 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-[0_0_20px_rgba(124,58,237,0.4)] disabled:opacity-50"
-              >
-                {starting ? (
-                  <><Loader2 size={16} className="animate-spin" /> Starting…</>
-                ) : (
-                  <>Start &amp; charge {amount}</>
-                )}
-              </button>
-            </div>
+            <Button variant="secondary" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleStart} loading={starting}>
+              Start &amp; charge {amount}
+            </Button>
           </>
-        )}
-      </div>
-    </div>
+        )
+      }
+    >
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-8 text-sm text-ink-2">
+          Checking Stripe…
+        </div>
+      ) : !preview?.eligible ? (
+        <p className="rounded-lg border border-warn/40 bg-warn-soft p-3 text-sm text-warn">
+          {preview?.reason || "Not eligible to start a subscription."}
+        </p>
+      ) : (
+        <div className="space-y-4">
+          <div className="space-y-3 rounded-lg border border-line bg-ground p-4 text-sm">
+            <div className="flex justify-between">
+              <span className="text-ink-3">Account</span>
+              <span className="text-ink">{accountName}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-ink-3">Payment method on file</span>
+              <span className="capitalize text-ink">{preview.method?.label}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-ink-3">Monthly charge</span>
+              <span className="font-semibold text-ink">
+                {amount}/mo{preview.method?.rail === "card" ? " (incl. 3% card fee)" : ""}
+              </span>
+            </div>
+          </div>
+
+          <p className="flex items-start gap-2 text-xs leading-relaxed text-ink-3">
+            <CalendarClock size={14} className="mt-0.5 shrink-0" />
+            Today becomes the Service Start Date: the saved payment method is charged
+            immediately and on this day of each month going forward. Stripe emails the
+            client a receipt each cycle.
+          </p>
+        </div>
+      )}
+    </Modal>
   );
 }

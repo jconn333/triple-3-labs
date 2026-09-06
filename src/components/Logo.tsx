@@ -6,11 +6,14 @@ interface LogoProps {
   size?: number;
   className?: string;
   variant?: "icon" | "full";
+  /** Stable id prefix for gradient defs. Pass one where server/client trees can differ (the admin shell). */
+  idPrefix?: string;
 }
 
-export function LogoIcon({ size = 36, className = "" }: LogoProps) {
+export function LogoIcon({ size = 36, className = "", idPrefix }: LogoProps) {
   // Unique per-instance IDs so multiple logos (navbar + footer) don't collide.
-  const uid = useId();
+  const autoId = useId();
+  const uid = idPrefix ?? autoId;
   const gradId = `logo-grad-${uid}`;
   const gradId2 = `logo-grad-2-${uid}`;
 

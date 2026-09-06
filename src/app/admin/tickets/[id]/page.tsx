@@ -2,33 +2,30 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
-import {
-  Mail,
-  Building2,
-  Clock,
-  Send,
-  Lock,
-  User,
-  Bot,
-  UserCog,
-  Settings,
-  AlertTriangle,
-  Wrench,
-  Gauge,
-  ListChecks,
-  Link2,
-  Copy,
-  Check,
-  Undo2,
-} from "lucide-react";
+import { AlertTriangle, Check, Copy, Send, Undo2 } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
 import { formatDate, formatRelativeTime } from "@/lib/utils/format";
-import TicketStatusBadge from "@/components/admin/TicketStatusBadge";
-import TicketSeverityBadge from "@/components/admin/TicketSeverityBadge";
-import TicketTierBadge from "@/components/admin/TicketTierBadge";
-import TicketChannelBadge from "@/components/admin/TicketChannelBadge";
-import TicketActionStatusBadge from "@/components/admin/TicketActionStatusBadge";
-import type { Ticket, TicketMessage, TicketDiagnosis, TicketAction, TicketStatus } from "@/lib/crm/types";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { RecordShell, Fact, Details } from "@/components/admin/RecordShell";
+import {
+  Badge,
+  Button,
+  EmptyState,
+  Panel,
+  PanelHeader,
+  PanelRows,
+  PanelSkeleton,
+  Select,
+  StatusBadge,
+  Textarea,
+  TierBadge,
+  ticketChannelTone,
+  toneFor,
+  type Tone,
+} from "@/components/ui";
+import type { Ticket, TicketMessage, TicketDiagnosis, TicketAction, TicketStatus, TicketMessageAuthorType } from "@/lib/crm/types";
 
 const STATUS_OPTIONS: TicketStatus[] = [
   "new",
@@ -42,34 +39,11 @@ const STATUS_OPTIONS: TicketStatus[] = [
   "closed",
 ];
 
-const authorStyles: Record<
-  string,
-  { icon: typeof User; bubble: string; iconWrap: string; align: string }
-> = {
-  customer: {
-    icon: User,
-    bubble: "bg-white/[0.04] border-white/10",
-    iconWrap: "bg-white/10 text-white/60",
-    align: "",
-  },
-  ai: {
-    icon: Bot,
-    bubble: "bg-violet-500/[0.06] border-violet-500/20",
-    iconWrap: "bg-violet-500/15 text-violet-300",
-    align: "",
-  },
-  staff: {
-    icon: UserCog,
-    bubble: "bg-cyan-500/[0.06] border-cyan-500/20",
-    iconWrap: "bg-cyan-500/15 text-cyan-300",
-    align: "",
-  },
-  system: {
-    icon: Settings,
-    bubble: "bg-zinc-500/[0.06] border-zinc-500/20 border-dashed",
-    iconWrap: "bg-zinc-500/15 text-zinc-400",
-    align: "",
-  },
+const AUTHOR_TONE: Record<TicketMessageAuthorType, Tone> = {
+  customer: "neutral",
+  ai: "accent",
+  staff: "neutral",
+  system: "neutral",
 };
 
 export default function TicketDetailPage() {
@@ -85,6 +59,7 @@ export default function TicketDetailPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [confirmRollbackId, setConfirmRollbackId] = useState<string | null>(null);
   const [rollingBackId, setRollingBackId] = useState<string | null>(null);
+  const [decidingId, setDecidingId] = useState<string | null>(null);
 
   const fetchTicket = useCallback(async () => {
     try {
@@ -166,6 +141,30 @@ export default function TicketDetailPage() {
     }
   }
 
+  async function handleDecide(actionId: string, decision: "approve" | "reject") {
+    const action = actions.find((a) => a.id === actionId);
+    if (!action?.approval_token) {
+      toast.error("This action has no approval link to decide against.");
+      return;
+    }
+    setDecidingId(actionId);
+    try {
+      const res = await fetch(`/api/ticket-actions/${actionId}/decide`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: action.approval_token, decision }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to decide");
+      toast.success(decision === "approve" ? "Fix approved" : "Fix rejected");
+      fetchTicket();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to decide");
+    } finally {
+      setDecidingId(null);
+    }
+  }
+
   async function handleRollback(actionId: string) {
     setRollingBackId(actionId);
     try {
@@ -183,295 +182,281 @@ export default function TicketDetailPage() {
   }
 
   if (loading) {
-    return (
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="glass-card animate-pulse rounded-xl p-6 h-80" />
-        <div className="lg:col-span-2 glass-card animate-pulse rounded-xl p-6 h-80" />
-      </div>
-    );
+    return <PanelSkeleton rows={6} />;
   }
 
   if (!ticket) {
-    return <div className="glass-card rounded-xl p-8 text-center text-white/50">Ticket not found.</div>;
+    return <EmptyState title="Ticket not found" />;
   }
 
+  const facts = (
+    <>
+      <Fact label="Ticket">#{ticket.ticket_number}</Fact>
+      {ticket.account?.name && (
+        <Fact label="Account">
+          <Link href={`/admin/clients/${ticket.account.id}`} className="hover:underline">
+            {ticket.account.name}
+          </Link>
+        </Fact>
+      )}
+      <Fact label="From">{ticket.contact?.email || ticket.submitter_email || "—"}</Fact>
+      <Fact label="Channel">{toneFor(ticketChannelTone, ticket.channel).label}</Fact>
+      <Fact label="Severity">
+        <StatusBadge kind="severity" value={ticket.severity} />
+      </Fact>
+      <Fact label="Tier">
+        <TierBadge tier={ticket.tier} />
+      </Fact>
+      <Fact label="Opened">
+        <span title={formatDate(ticket.created_at)}>{formatRelativeTime(ticket.created_at)}</span>
+      </Fact>
+    </>
+  );
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="glass-card rounded-xl p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs text-white/40">Ticket #{ticket.ticket_number}</p>
-            <h1 className="mt-1 text-xl font-bold text-white" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-              {ticket.subject}
-            </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <TicketSeverityBadge severity={ticket.severity} />
-              <TicketTierBadge tier={ticket.tier} />
-              <TicketChannelBadge channel={ticket.channel} />
-              {ticket.reopened_count > 0 && (
-                <span className="inline-flex items-center rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
-                  Reopened ×{ticket.reopened_count}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <select
-              value={ticket.status}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-violet/50"
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s.replace("_", " ")}
-                </option>
-              ))}
-            </select>
-            <TicketStatusBadge status={ticket.status} size="md" />
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-4 text-xs text-white/40">
-          {ticket.account?.name && (
-            <span className="flex items-center gap-1.5">
-              <Building2 size={12} /> {ticket.account.name}
-            </span>
-          )}
-          {(ticket.contact?.email || ticket.submitter_email) && (
-            <span className="flex items-center gap-1.5">
-              <Mail size={12} /> {ticket.contact?.email || ticket.submitter_email}
-            </span>
-          )}
-          <span className="flex items-center gap-1.5">
-            <Clock size={12} /> Opened {formatDate(ticket.created_at)}
-          </span>
-        </div>
-
-        <div className="mt-3 flex items-center gap-2 text-xs text-white/40">
-          <Link2 size={12} className="shrink-0 text-white/30" />
-          <span className="hidden sm:inline">Customer link:</span>
-          <code className="truncate rounded bg-white/5 px-2 py-1 text-[11px] text-white/50">{customerViewUrl()}</code>
-          <button
-            onClick={handleCopyLink}
-            className="flex shrink-0 items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+    <>
+      <PageHeader title={`#${ticket.ticket_number} ${ticket.subject}`} crumb={{ label: "Tickets", href: "/admin/tickets" }} />
+      <RecordShell
+        title={ticket.subject}
+        status={<StatusBadge kind="ticket" value={ticket.status} />}
+        facts={facts}
+        actions={
+          <Select
+            value={ticket.status}
+            onChange={(e) => handleStatusChange(e.target.value)}
+            className="w-[180px]"
+            aria-label="Ticket status"
           >
-            {linkCopied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-            {linkCopied ? "Copied" : "Copy"}
-          </button>
-        </div>
-
-        {ticket.status === "escalated" && ticket.escalation_reason && (
-          <div className="mt-4 flex items-start gap-2 rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-            <div>
-              <p className="font-medium">Escalated</p>
-              <p className="text-rose-300/80">{ticket.escalation_reason}</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left: Conversation */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="glass-card rounded-xl p-6">
-            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-white/40">Conversation</h3>
-            {messages.length === 0 ? (
-              <p className="py-4 text-center text-sm text-white/30">No messages yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {messages.map((m) => {
-                  const style = authorStyles[m.author_type] || authorStyles.system;
-                  const Icon = style.icon;
-                  return (
-                    <div key={m.id} className={`flex gap-3 rounded-lg border p-4 ${style.bubble}`}>
-                      <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${style.iconWrap}`}>
-                        <Icon size={14} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-medium text-white/80">
-                            {m.author_name || m.author_type}
-                          </span>
-                          <span className="text-[10px] uppercase tracking-wider text-white/30">{m.author_type}</span>
-                          {m.is_internal && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
-                              <Lock size={9} /> Internal note
-                            </span>
-                          )}
-                          <span className="text-[10px] text-white/25">{formatRelativeTime(m.created_at)}</span>
-                        </div>
-                        <p className="mt-1.5 whitespace-pre-wrap text-sm text-white/70">{m.body}</p>
-                      </div>
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s.replace(/_/g, " ")}
+              </option>
+            ))}
+          </Select>
+        }
+        rail={
+          <>
+            <Panel>
+              <PanelHeader title="Triage" count={diagnoses.length || undefined} />
+              {diagnoses.length === 0 ? (
+                <EmptyState compact title="No diagnosis yet" />
+              ) : (
+                <div className="divide-y divide-line">
+                  {diagnoses.map((d) => (
+                    <div key={d.id}>
+                      {d.summary && <p className="break-words px-4 pt-3 text-sm text-ink-2 [overflow-wrap:anywhere]">{d.summary}</p>}
+                      <Details
+                        items={[
+                          { label: "Category", value: d.category },
+                          {
+                            label: "Confidence",
+                            value: d.confidence ? <span className="capitalize">{d.confidence}</span> : null,
+                          },
+                          {
+                            label: "Runbook",
+                            value: d.matched_runbook_key ? (
+                              <span className="font-ui-mono text-xs">{d.matched_runbook_key}</span>
+                            ) : null,
+                          },
+                          { label: "Tier", value: <TierBadge tier={d.proposed_tier} /> },
+                          ...(d.could_reproduce !== null && d.could_reproduce !== undefined
+                            ? [{ label: "Reproduced", value: d.could_reproduce ? "Yes" : "No" }]
+                            : []),
+                        ]}
+                      />
+                      {Boolean(d.evidence) && <JsonDetails label="Evidence" value={d.evidence} />}
+                      <p className="-mt-1 px-4 pb-3 text-xs text-ink-3">
+                        {d.model ? `${d.model} · ` : ""}
+                        {formatRelativeTime(d.created_at)}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </Panel>
 
-            {/* Reply box */}
-            <form onSubmit={handleReplySubmit} className="mt-5 border-t border-white/5 pt-5">
-              <textarea
-                value={replyBody}
-                onChange={(e) => setReplyBody(e.target.value)}
-                placeholder={replyInternal ? "Add an internal note (staff only)..." : "Reply to the customer..."}
-                rows={3}
-                className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-violet/50"
-              />
-              <div className="mt-2 flex items-center justify-between">
-                <label className="flex items-center gap-2 text-xs text-white/50">
-                  <input
-                    type="checkbox"
-                    checked={replyInternal}
-                    onChange={(e) => setReplyInternal(e.target.checked)}
-                    className="rounded border-white/20 bg-white/5"
-                  />
-                  Internal note (not visible to customer)
-                </label>
-                <button
-                  type="submit"
-                  disabled={sending || !replyBody.trim()}
-                  className="flex items-center gap-2 rounded-lg bg-violet/20 px-4 py-2 text-sm font-medium text-violet hover:bg-violet/30 transition-colors disabled:opacity-40"
-                >
-                  <Send size={14} />
-                  {replyInternal ? "Add Note" : "Send Reply"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        {/* Right: Diagnosis + Actions */}
-        <div className="space-y-4">
-          {/* AI Diagnosis */}
-          <div className="glass-card rounded-xl p-6">
-            <h3 className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-white/40">
-              <Gauge size={13} /> AI Diagnosis
-            </h3>
-            {diagnoses.length === 0 ? (
-              <p className="py-4 text-center text-sm text-white/30">No diagnosis yet.</p>
-            ) : (
-              <div className="space-y-4">
-                {diagnoses.map((d) => (
-                  <div key={d.id} className="rounded-lg bg-white/[0.03] p-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium text-white">{d.category}</span>
-                      {d.confidence && (
-                        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium capitalize text-white/50">
-                          {d.confidence} confidence
-                        </span>
+            <Panel>
+              <PanelHeader title="Actions" count={actions.length || undefined} />
+              {actions.length === 0 ? (
+                <EmptyState compact title="No actions yet" />
+              ) : (
+                <div className="divide-y divide-line">
+                  {actions.map((a) => (
+                    <div key={a.id} className="px-4 py-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-ink">{a.runbook?.title || a.runbook_key}</span>
+                        <StatusBadge kind="action" value={a.status} />
+                      </div>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-3">
+                        <TierBadge tier={a.tier} size="sm" />
+                        <span>Proposed {formatRelativeTime(a.created_at)}</span>
+                        {a.decided_at && <span>Decided {formatRelativeTime(a.decided_at)}</span>}
+                        {a.executed_at && <span>Executed {formatRelativeTime(a.executed_at)}</span>}
+                        {a.verified_at && <span>Verified {formatRelativeTime(a.verified_at)}</span>}
+                      </div>
+                      {a.approved_by && <p className="mt-1 text-xs text-ink-3">Approved by {a.approved_by}</p>}
+                      {a.error && (
+                        <p className="mt-2 rounded border border-line bg-bad-soft px-2.5 py-1.5 text-xs text-bad">{a.error}</p>
                       )}
-                      <TicketTierBadge tier={d.proposed_tier} />
-                    </div>
-                    <p className="mt-2 text-sm text-white/60">{d.summary}</p>
-                    {d.matched_runbook_key && (
-                      <p className="mt-2 flex items-center gap-1.5 text-xs text-white/40">
-                        <Wrench size={12} /> Matched runbook: <code className="text-white/60">{d.matched_runbook_key}</code>
-                      </p>
-                    )}
-                    {d.could_reproduce !== null && d.could_reproduce !== undefined && (
-                      <p className="mt-1 text-xs text-white/40">
-                        Could reproduce: {d.could_reproduce ? "Yes" : "No"}
-                      </p>
-                    )}
-                    {Boolean(d.evidence) && (
-                      <div className="mt-2">
-                        <p className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/30">
-                          <ListChecks size={11} /> Evidence
-                        </p>
-                        <pre className="overflow-x-auto rounded bg-black/30 p-2 text-[11px] text-white/50">
-                          {JSON.stringify(d.evidence, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-                    <p className="mt-2 text-[10px] text-white/25">
-                      {d.model ? `${d.model} · ` : ""}
-                      {formatRelativeTime(d.created_at)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                      {Boolean(a.result) && <JsonDetails label="Result" value={a.result} className="mt-2 -mx-4" />}
 
-          {/* Actions timeline */}
-          <div className="glass-card rounded-xl p-6">
-            <h3 className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-white/40">
-              <Wrench size={13} /> Actions
-            </h3>
-            {actions.length === 0 ? (
-              <p className="py-4 text-center text-sm text-white/30">No actions yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {actions.map((a) => (
-                  <div key={a.id} className="rounded-lg bg-white/[0.03] p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-white">
-                        {a.runbook?.title || a.runbook_key}
-                      </span>
-                      <TicketActionStatusBadge status={a.status} />
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] text-white/30">
-                      <TicketTierBadge tier={a.tier} size="sm" />
-                      <span>Proposed {formatRelativeTime(a.created_at)}</span>
-                      {a.decided_at && <span>Decided {formatRelativeTime(a.decided_at)}</span>}
-                      {a.executed_at && <span>Executed {formatRelativeTime(a.executed_at)}</span>}
-                      {a.verified_at && <span>Verified {formatRelativeTime(a.verified_at)}</span>}
-                    </div>
-                    {a.approved_by && (
-                      <p className="mt-1.5 text-xs text-white/40">Approved by {a.approved_by}</p>
-                    )}
-                    {a.error && (
-                      <p className="mt-2 rounded border border-rose-500/20 bg-rose-500/10 px-2.5 py-1.5 text-xs text-rose-300">
-                        {a.error}
-                      </p>
-                    )}
-                    {Boolean(a.result) && (
-                      <pre className="mt-2 overflow-x-auto rounded bg-black/30 p-2 text-[11px] text-white/50">
-                        {JSON.stringify(a.result, null, 2)}
-                      </pre>
-                    )}
-                    {(a.status === "executed" || a.status === "verified") && (
-                      <div className="mt-3 border-t border-white/5 pt-3">
-                        {confirmRollbackId === a.id ? (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs text-amber-300">
-                              Roll back this fix and escalate the ticket?
-                            </span>
-                            <button
-                              onClick={() => handleRollback(a.id)}
-                              disabled={rollingBackId === a.id}
-                              className="rounded-lg bg-rose-500/20 px-3 py-1 text-xs font-medium text-rose-300 transition-colors hover:bg-rose-500/30 disabled:opacity-50"
-                            >
-                              {rollingBackId === a.id ? "Rolling back..." : "Confirm rollback"}
-                            </button>
-                            <button
-                              onClick={() => setConfirmRollbackId(null)}
-                              disabled={rollingBackId === a.id}
-                              className="rounded-lg border border-white/10 px-3 py-1 text-xs font-medium text-white/50 transition-colors hover:bg-white/5 disabled:opacity-50"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmRollbackId(a.id)}
-                            className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1 text-xs font-medium text-white/50 transition-colors hover:bg-white/5 hover:text-white"
+                      {a.status === "proposed" && (
+                        <div className="mt-2.5 flex items-center gap-2">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleDecide(a.id, "approve")}
+                            loading={decidingId === a.id}
                           >
-                            <Undo2 size={12} />
-                            Mark rolled back
-                          </button>
-                        )}
+                            Approve
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDecide(a.id, "reject")}
+                            loading={decidingId === a.id}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+
+                      {(a.status === "executed" || a.status === "verified") && (
+                        <div className="mt-2.5 border-t border-line pt-2.5">
+                          {confirmRollbackId === a.id ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-xs text-warn">Roll back this fix and escalate the ticket?</span>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleRollback(a.id)}
+                                loading={rollingBackId === a.id}
+                              >
+                                Confirm rollback
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setConfirmRollbackId(null)}
+                                disabled={rollingBackId === a.id}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button variant="secondary" size="sm" onClick={() => setConfirmRollbackId(a.id)}>
+                              <Undo2 size={12} /> Mark rolled back
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Panel>
+
+            <Panel>
+              <PanelHeader title="Details" />
+              <Details
+                items={[
+                  { label: "Escalation", value: ticket.escalation_reason },
+                  { label: "Reopened", value: ticket.reopened_count > 0 ? `×${ticket.reopened_count}` : "Never" },
+                  {
+                    label: "Customer link",
+                    value: (
+                      <div className="flex items-center gap-1.5">
+                        <code className="min-w-0 flex-1 truncate rounded bg-surface-2 px-1.5 py-0.5 font-ui-mono text-xs text-ink-2">
+                          {customerViewUrl()}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={handleCopyLink}
+                          title="Copy customer link"
+                          aria-label="Copy customer link"
+                        >
+                          {linkCopied ? <Check size={12} className="text-good" /> : <Copy size={12} />}
+                        </Button>
                       </div>
-                    )}
-                  </div>
-                ))}
+                    ),
+                  },
+                ]}
+              />
+            </Panel>
+          </>
+        }
+      >
+        {ticket.status === "escalated" && ticket.escalation_reason && (
+          <Panel className="border-l-[3px] border-l-bad">
+            <div className="flex items-start gap-2.5 px-4 py-3 text-sm">
+              <AlertTriangle size={15} className="mt-0.5 shrink-0 text-bad" />
+              <div>
+                <p className="font-medium text-ink">Escalated</p>
+                <p className="text-ink-2">{ticket.escalation_reason}</p>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+            </div>
+          </Panel>
+        )}
+
+        <Panel>
+          <PanelHeader title="Conversation" count={messages.length} />
+          {messages.length === 0 ? (
+            <EmptyState compact title="No messages yet" />
+          ) : (
+            <PanelRows>
+              {messages.map((m) => (
+                <div key={m.id} className={cn("px-4 py-3", m.is_internal && "bg-surface-2")}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-ink">{m.author_name || m.author_type}</span>
+                    <Badge tone={AUTHOR_TONE[m.author_type] ?? "neutral"} size="sm">
+                      {m.author_type}
+                    </Badge>
+                    <span className="text-xs text-ink-3">{formatRelativeTime(m.created_at)}</span>
+                  </div>
+                  <p className="mt-1.5 whitespace-pre-wrap text-sm text-ink-2">{m.body}</p>
+                </div>
+              ))}
+            </PanelRows>
+          )}
+
+          <form onSubmit={handleReplySubmit} className="border-t border-line p-4">
+            <Textarea
+              value={replyBody}
+              onChange={(e) => setReplyBody(e.target.value)}
+              placeholder={replyInternal ? "Add an internal note (staff only)…" : "Reply to the customer…"}
+              rows={3}
+            />
+            <div className="mt-2.5 flex items-center justify-between gap-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sub text-ink-2">
+                <input
+                  type="checkbox"
+                  checked={replyInternal}
+                  onChange={(e) => setReplyInternal(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-line-strong accent-accent"
+                />
+                Internal note (not visible to customer)
+              </label>
+              <Button type="submit" variant="primary" size="sm" disabled={!replyBody.trim()} loading={sending}>
+                <Send size={13} />
+                {replyInternal ? "Add note" : "Send reply"}
+              </Button>
+            </div>
+          </form>
+        </Panel>
+      </RecordShell>
+    </>
+  );
+}
+
+/** Raw JSON (evidence, results) tucked behind a disclosure so the rail stays readable. */
+function JsonDetails({ label, value, className }: { label: string; value: unknown; className?: string }) {
+  return (
+    <details className={className ?? "px-4 pb-2"}>
+      <summary className="cursor-pointer select-none text-xs font-medium text-ink-2 hover:text-ink">{label}</summary>
+      <pre className="mt-1.5 max-h-64 overflow-auto rounded-md bg-surface-2 p-2.5 font-ui-mono text-[12px] leading-relaxed text-ink-2">
+        {JSON.stringify(value, null, 2)}
+      </pre>
+    </details>
   );
 }

@@ -179,7 +179,7 @@ export async function POST(
       const formTitle = spec.title;
       const accountId = onboardingRequest.account_id;
       const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\/$/, "");
-      const adminUrl = `${baseUrl}/admin/accounts/${accountId}`;
+      const adminUrl = `${baseUrl}/admin/clients/${accountId}`;
       after(async () => {
         try {
           await sendOnboardingSubmittedEmail({

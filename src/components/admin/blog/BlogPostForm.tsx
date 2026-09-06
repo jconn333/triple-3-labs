@@ -6,11 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Send, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Save, Send } from "lucide-react";
 import dynamic from "next/dynamic";
 import { generateSlug } from "@/lib/utils/slug";
 import type { BlogPost } from "@/lib/blog/types";
+import { Button, Field, Input, Textarea } from "@/components/ui";
 
 const TipTapEditor = dynamic(() => import("./TipTapEditor"), { ssr: false });
 
@@ -24,11 +24,6 @@ const blogPostSchema = z.object({
 });
 
 type FormData = z.infer<typeof blogPostSchema>;
-
-const inputClasses =
-  "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50";
-const labelClasses = "mb-1.5 block text-sm font-medium text-white/60";
-const errorClasses = "mt-1 text-xs text-red-400";
 
 interface BlogPostFormProps {
   post?: BlogPost;
@@ -109,128 +104,65 @@ export default function BlogPostForm({ post }: BlogPostFormProps) {
   }
 
   return (
-    <div>
-      <Link
-        href="/admin/blog"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-white/40 transition-colors hover:text-white/70"
-      >
-        <ArrowLeft size={14} />
-        Back to Blog Posts
-      </Link>
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+      {/* Title + Slug row */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Field label="Title" error={errors.title?.message}>
+          <Input {...register("title")} placeholder="Post title" />
+        </Field>
+        <Field label="Slug" error={errors.slug?.message}>
+          <Input {...register("slug")} placeholder="post-url-slug" />
+        </Field>
+      </div>
 
-      <form
-        onSubmit={(e) => e.preventDefault()}
-        className="space-y-6"
-      >
-        {/* Title + Slug row */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <div>
-            <label className={labelClasses}>Title</label>
-            <input
-              {...register("title")}
-              className={inputClasses}
-              placeholder="Post title"
-            />
-            {errors.title && (
-              <p className={errorClasses}>{errors.title.message}</p>
-            )}
-          </div>
-          <div>
-            <label className={labelClasses}>Slug</label>
-            <input
-              {...register("slug")}
-              className={inputClasses}
-              placeholder="post-url-slug"
-            />
-            {errors.slug && (
-              <p className={errorClasses}>{errors.slug.message}</p>
-            )}
-          </div>
-        </div>
+      {/* Description */}
+      <Field label="Description" error={errors.description?.message}>
+        <Textarea {...register("description")} rows={2} placeholder="Brief description for SEO and blog listing" />
+      </Field>
 
-        {/* Description */}
-        <div>
-          <label className={labelClasses}>Description</label>
-          <textarea
-            {...register("description")}
-            rows={2}
-            className={inputClasses}
-            placeholder="Brief description for SEO and blog listing"
-          />
-          {errors.description && (
-            <p className={errorClasses}>{errors.description.message}</p>
-          )}
-        </div>
+      {/* Author + Tags row */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Field label="Author" error={errors.author?.message}>
+          <Input {...register("author")} placeholder="Author name" />
+        </Field>
+        <Field label="Tags">
+          <Input {...register("tags")} placeholder="AI Agents, Automation, Voice AI" />
+        </Field>
+      </div>
 
-        {/* Author + Tags row */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <div>
-            <label className={labelClasses}>Author</label>
-            <input
-              {...register("author")}
-              className={inputClasses}
-              placeholder="Author name"
-            />
-            {errors.author && (
-              <p className={errorClasses}>{errors.author.message}</p>
-            )}
-          </div>
-          <div>
-            <label className={labelClasses}>Tags</label>
-            <input
-              {...register("tags")}
-              className={inputClasses}
-              placeholder="AI Agents, Automation, Voice AI"
-            />
-          </div>
-        </div>
+      {/* Featured Image URL */}
+      <Field label="Featured image URL (optional)">
+        <Input {...register("featured_image_url")} placeholder="https://..." />
+      </Field>
 
-        {/* Featured Image URL */}
-        <div>
-          <label className={labelClasses}>Featured Image URL (optional)</label>
-          <input
-            {...register("featured_image_url")}
-            className={inputClasses}
-            placeholder="https://..."
-          />
-        </div>
+      {/* Content Editor */}
+      <Field label="Content">
+        <TipTapEditor content={content} onChange={setContent} />
+      </Field>
 
-        {/* Content Editor */}
-        <div>
-          <label className={labelClasses}>Content</label>
-          <TipTapEditor content={content} onChange={setContent} />
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex items-center gap-3 border-t border-white/5 pt-6">
-          <button
-            type="button"
-            disabled={saving}
-            onClick={handleSubmit((data) => onSubmit(data, "draft"))}
-            className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
-          >
-            {saving ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Save size={16} />
-            )}
-            Save Draft
-          </button>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={handleSubmit((data) => onSubmit(data, "published"))}
-            className="flex items-center gap-2 rounded-lg bg-violet-500/20 px-5 py-2.5 text-sm font-medium text-violet-300 transition-colors hover:bg-violet-500/30 disabled:opacity-50"
-          >
-            {saving ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Send size={16} />
-            )}
-            Publish
-          </button>
-        </div>
-      </form>
-    </div>
+      {/* Action buttons */}
+      <div className="flex items-center gap-3 border-t border-line pt-6">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={saving}
+          loading={saving}
+          onClick={handleSubmit((data) => onSubmit(data, "draft"))}
+        >
+          {!saving && <Save size={14} />}
+          Save draft
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          disabled={saving}
+          loading={saving}
+          onClick={handleSubmit((data) => onSubmit(data, "published"))}
+        >
+          {!saving && <Send size={14} />}
+          Publish
+        </Button>
+      </div>
+    </form>
   );
 }

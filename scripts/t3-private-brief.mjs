@@ -203,7 +203,7 @@ if (dueSoon.length) {
 if (!needs.length && !readLines.length && !deliveryLines.length && !dueSoon.length) {
   lines.push("All quiet — nothing needs you, nothing was read or delivered in the last 24h.");
 }
-lines.push(`_Full picture: /admin/command · ask me "what needs me" anytime_`);
+lines.push(`_Full picture: /admin · ask me "what needs me" anytime_`);
 const brief = lines.join("\n").slice(0, 11_900); // Pingo body cap
 
 // ---------- deliver ----------

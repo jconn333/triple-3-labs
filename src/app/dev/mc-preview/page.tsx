@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
-import MissionControlView, { type MissionData } from "@/app/admin/mission-control/view";
+import AgentsView, { type MissionData } from "@/app/admin/agents/view";
 
 const spiky = [0, 0, 3, 2, 3, 2, 0, 1, 3, 2, 3, 3, 2, 3, 2, 1, 3, 2, 3, 2, 3, 1, 2, 3];
 const hourly = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1];
@@ -193,8 +193,8 @@ export default function MissionControlPreview() {
   if (process.env.NODE_ENV !== "development") notFound();
   if (!mounted) return null;
   return (
-    <main className="min-h-screen bg-background p-8">
-      <MissionControlView data={FIXTURE} onRefresh={() => {}} />
+    <main className="admin min-h-screen p-8">
+      <AgentsView data={FIXTURE} onRefresh={() => {}} />
     </main>
   );
 }
