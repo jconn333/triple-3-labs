@@ -104,7 +104,7 @@ function PipelineInner() {
   const handleDeleteDeal = useCallback(
     async (deal: Deal) => {
       const label = deal.name || "this deal";
-      if (!confirm(`Delete ${label}? This also removes the associated contact and activity history.`)) return;
+      if (!confirm(`Delete ${label}? The contact and its activity history are kept.`)) return;
       const prevDeals = deals;
       setDeals((current) => current.filter((d) => d.id !== deal.id));
       if (selectedId === deal.id) select(null);

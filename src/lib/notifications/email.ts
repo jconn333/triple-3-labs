@@ -41,9 +41,9 @@ export async function sendTicketAcknowledgmentEmail(params: {
           <div style="background:#f6f6f6; padding:12px; border-radius:6px; margin: 16px 0;">
             <strong>${esc(params.subject)}</strong>
           </div>
-          <p>Our AI triage system is reviewing it now, and a team member will follow up if needed.</p>
+          <p>Please verify your email using the link below so we can review your request.</p>
           <p style="margin: 20px 0;">
-            <a href="${esc(params.viewUrl)}" style="display:inline-block; background:#7c3aed; color:#fff; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:600;">Track your ticket</a>
+            <a href="${esc(params.viewUrl)}" style="display:inline-block; background:#7c3aed; color:#fff; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:600;">Verify email &amp; view ticket</a>
           </p>
           <p style="color:#888; font-size:12px; margin-top:24px;">If you weren't expecting this, you can ignore this email.</p>
         </div>

@@ -15,7 +15,7 @@ Return ONLY valid JSON with this exact structure:
 
 Score thresholds: hot = 70+, warm = 40-69, cold = below 40`;
 
-export async function scoreLeadWithAI(data: ContactFormData): Promise<LeadScore> {
+export async function scoreLeadWithAI(data: ContactFormData): Promise<LeadScore & { model: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return fallbackScoring(data);
 
@@ -46,13 +46,14 @@ export async function scoreLeadWithAI(data: ContactFormData): Promise<LeadScore>
       score: Math.min(100, Math.max(1, parsed.score)),
       label: parsed.label,
       reasoning: parsed.reasoning,
+      model: "claude-haiku-4-5-20251001",
     };
   } catch {
     return fallbackScoring(data);
   }
 }
 
-function fallbackScoring(data: ContactFormData): LeadScore {
+function fallbackScoring(data: ContactFormData): LeadScore & { model: string } {
   let score = 40;
 
   const personalDomains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"];
@@ -65,5 +66,5 @@ function fallbackScoring(data: ContactFormData): LeadScore {
 
   score = Math.min(100, score);
   const label = score >= 70 ? "hot" : score >= 40 ? "warm" : "cold";
-  return { score, label, reasoning: `Fallback scoring based on email domain, message length, and company info. AI scoring unavailable.` };
+  return { score, label, model: "fallback-heuristic", reasoning: `Fallback scoring based on email domain, message length, and company info. AI scoring unavailable.` };
 }

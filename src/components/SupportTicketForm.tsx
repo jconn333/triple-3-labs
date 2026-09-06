@@ -14,7 +14,6 @@ const formSchema = z.object({
   subject: z.string().min(1, "Subject is required").max(200),
   description: z.string().min(10, "Tell us a bit more (10+ chars)"),
   severity: z.enum(["low", "normal", "high", "urgent"]),
-  agent_id: z.string().max(100).optional(),
   // Honeypot — left blank by real users, hidden from view.
   website: z.string().max(0).optional().or(z.literal("")),
 });
@@ -23,7 +22,6 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function SupportTicketForm() {
   const [ticketNumber, setTicketNumber] = useState<number | null>(null);
-  const [viewUrl, setViewUrl] = useState<string | null>(null);
 
   const {
     register,
@@ -49,7 +47,6 @@ export default function SupportTicketForm() {
       }
 
       setTicketNumber(result.ticket_number);
-      setViewUrl(result.view_url ?? null);
       reset();
       toast.success("Ticket submitted!");
     } catch (error) {
@@ -65,21 +62,12 @@ export default function SupportTicketForm() {
           Ticket #{ticketNumber} submitted
         </h3>
         <p className="text-white/50">
-          Our AI triage system is reviewing it now. We&apos;ll follow up by email if we need anything else —
-          keep your ticket number handy for reference.
+          Check your inbox — we sent a verification link to the address you entered. Your ticket goes to
+          our team as soon as you click it. Keep your ticket number handy for reference.
         </p>
-        {viewUrl && (
-          <a
-            href={viewUrl}
-            className="mt-4 inline-block text-sm font-medium text-violet hover:text-violet/80 underline"
-          >
-            Track your ticket
-          </a>
-        )}
         <button
           onClick={() => {
             setTicketNumber(null);
-            setViewUrl(null);
           }}
           className="mt-4 block w-full text-sm text-white/40 hover:text-white/60 underline"
         >
@@ -119,15 +107,9 @@ export default function SupportTicketForm() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={labelClasses}>Company</label>
-          <input {...register("company")} className={inputClasses} placeholder="Your company" />
-        </div>
-        <div>
-          <label className={labelClasses}>Which agent or product?</label>
-          <input {...register("agent_id")} className={inputClasses} placeholder="e.g. SEO Agent, Daily Brief" />
-        </div>
+      <div>
+        <label className={labelClasses}>Company</label>
+        <input {...register("company")} className={inputClasses} placeholder="Your company" />
       </div>
 
       <div>

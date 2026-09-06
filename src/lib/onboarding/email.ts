@@ -1,3 +1,4 @@
+import { sendPingoDM } from "@/lib/notifications/pingo";
 import { emailConfigured } from "@/lib/esign/email";
 
 export { emailConfigured };
@@ -75,7 +76,12 @@ export async function sendOnboardingSubmittedEmail(params: {
   adminUrl: string;
 }): Promise<void> {
   const to = process.env.NOTIFICATION_EMAIL;
-  if (!to) return;
+  if (!to) {
+    const warning = "NOTIFICATION_EMAIL is unset: Jeff will not receive the onboarding-submitted notification.";
+    console.warn(warning);
+    await sendPingoDM(warning).catch((error) => console.warn("Missing-config Pingo alert failed:", error));
+    return;
+  }
   const { from } = resendConfig();
   await sendViaResend({
     from,

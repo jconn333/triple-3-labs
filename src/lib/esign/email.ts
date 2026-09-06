@@ -1,3 +1,7 @@
+import { sendPingoDM } from "@/lib/notifications/pingo";
+import { formatCurrency } from "@/lib/utils/format";
+import type { SetupFeeLinks } from "@/lib/billing/setup-fee";
+
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -73,28 +77,33 @@ export async function sendSignedCopiesEmail(params: {
   pdfBase64: string;
   fileName: string;
   /** When set, the email includes "complete your setup payment" buttons. */
-  payment?: { achUrl: string; cardUrl: string };
+  payment?: SetupFeeLinks;
 }): Promise<void> {
   const { from } = resendConfig();
   const internalCopy = process.env.NOTIFICATION_EMAIL;
+  if (!internalCopy) {
+    const warning = "NOTIFICATION_EMAIL is unset: Jeff will not receive the internal signed-contract copy.";
+    console.warn(warning);
+    await sendPingoDM(warning).catch((error) => console.warn("Missing-config Pingo alert failed:", error));
+  }
   const to = [params.signerEmail, ...(internalCopy ? [internalCopy] : [])];
 
   const paymentSection = params.payment
     ? `
         <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
         <h3 style="margin-bottom:6px;">Next step: implementation fee</h3>
-        <p style="color:#555; margin-top:0;">Per Section 3.1 of the agreement, the one-time $1,500 implementation fee is due to get started. Pay by bank transfer, or by card (a 3% processing fee applies to card payments per Section 3.4):</p>
+        <p style="color:#555; margin-top:0;">The one-time ${formatCurrency(params.payment.achCents / 100, 2)} implementation fee is due to get started. Pay by bank transfer, or by card (the card total includes processing fees):</p>
         <p style="margin:20px 0;">
           <a href="${params.payment.achUrl}"
              style="background:#6b46c1; color:#fff; padding:12px 22px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-block; margin-right:10px;">
-            Pay $1,500 — Bank (ACH)
+            Pay ${formatCurrency(params.payment.achCents / 100, 2)} — Bank (ACH)
           </a>
           <a href="${params.payment.cardUrl}"
              style="background:#f4f4f5; color:#1a1a2e; border:1px solid #d4d4d8; padding:12px 22px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-block;">
-            Pay $1,545 — Card
+            Pay ${formatCurrency(params.payment.cardCents / 100, 2)} — Card
           </a>
         </p>
-        <p style="color:#888; font-size:12px;">Your payment method will be securely saved with our payment processor (Stripe) for the monthly service fee, which begins when your SEO agent goes live.</p>
+        <p style="color:#888; font-size:12px;">Your payment method will be securely saved with our payment processor (Stripe) for future service payments under your agreement.</p>
       `
     : "";
 

@@ -123,21 +123,23 @@ export async function getSavedMethod(
   return null;
 }
 
-/** An account's existing monthly subscription, if any non-cancelled one exists. */
+/**
+ * Anything on the customer that already bills (or will bill) them: any live
+ * subscription regardless of metadata, or any pending/active subscription
+ * schedule (schedule metadata is not copied onto its subscriptions, and some
+ * clients are billed via schedules created by scripts). Auto-paginates.
+ */
 export async function findExistingMonthlySubscription(
-  customerId: string,
-  accountId: string
-): Promise<Stripe.Subscription | null> {
+  customerId: string
+): Promise<Stripe.Subscription | Stripe.SubscriptionSchedule | null> {
   const stripe = getStripe();
-  const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 20 });
-  return (
-    subs.data.find(
-      (s) =>
-        s.metadata?.purpose === "seo_monthly" &&
-        s.metadata?.account_id === accountId &&
-        !["canceled", "incomplete_expired"].includes(s.status)
-    ) ?? null
-  );
+  for await (const sub of stripe.subscriptions.list({ customer: customerId, status: "all", limit: 100 })) {
+    if (!["canceled", "incomplete_expired"].includes(sub.status)) return sub;
+  }
+  for await (const schedule of stripe.subscriptionSchedules.list({ customer: customerId, limit: 100 })) {
+    if (!["canceled", "released", "completed"].includes(schedule.status)) return schedule;
+  }
+  return null;
 }
 
 /**

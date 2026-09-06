@@ -16,9 +16,10 @@ Return ONLY valid JSON:
 export async function draftFollowUpEmail(
   contact: Contact,
   leadScore?: LeadScore | null
-): Promise<{ subject: string; body: string }> {
+): Promise<{ subject: string; body: string; model: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   const fallback = {
+    model: "fallback-heuristic",
     subject: `Following up — ${contact.company || "your AI project"}`,
     body: `Hi ${contact.first_name},\n\nThanks for reaching out to Triple 3 Labs. I'd love to learn more about your project and see how we can help.\n\nWould you be available for a quick discovery call this week?\n\nBest,\nJeff\nTriple 3 Labs`,
   };
@@ -46,7 +47,7 @@ export async function draftFollowUpEmail(
 
     if (!response.ok) throw new Error(`API error: ${response.status}`);
     const result = await response.json();
-    return JSON.parse(result.content[0]?.text || "");
+    return { ...JSON.parse(result.content[0]?.text || ""), model: "claude-haiku-4-5-20251001" };
   } catch {
     return fallback;
   }

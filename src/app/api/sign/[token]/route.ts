@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { hashToken } from "@/lib/esign/tokens";
 import { applySignatureToDocument, computeContractStatus } from "@/lib/esign/sign";
 import { emailConfigured, sendSignedCopiesEmail } from "@/lib/esign/email";
-import { createSetupFeeLinks } from "@/lib/billing/setup-fee";
+import { createSetupFeeLinks, type SetupFeeLinks } from "@/lib/billing/setup-fee";
 import type { PublicSigningView } from "@/lib/esign/types";
 
 function clientMeta(request: NextRequest) {
@@ -229,7 +229,7 @@ export async function POST(
     // them too. Accounts with no configured fee (null/0) get nothing charged.
     const setupFeeCents = account?.setup_fee_cents ?? 0;
     const wantsPayment = fullyExecuted && account && setupFeeCents > 0 && !account.setup_fee_paid_at;
-    let payment: { achUrl: string; cardUrl: string } | undefined;
+    let payment: SetupFeeLinks | undefined;
     if (wantsPayment) {
       try {
         payment = await createSetupFeeLinks({

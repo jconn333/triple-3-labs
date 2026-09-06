@@ -11,7 +11,6 @@ const publicTicketSchema = z.object({
   subject: z.string().min(1).max(200),
   description: z.string().min(10),
   severity: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
-  agent_id: z.string().max(100).optional(),
   // Honeypot — real users never fill this in; bots usually do. Deliberately
   // unrestricted length so a filled-in value still parses (and can be caught
   // below) instead of failing validation and tipping the bot off with a 400.
@@ -30,42 +29,20 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Look up an existing contact by email (case-insensitive) to link the ticket.
-    // ILIKE treats % and _ as wildcards — escape them so an email can only ever
-    // match itself, never pattern-match onto a different contact's account.
-    const emailPattern = data.email.replace(/[\\%_]/g, "\\$&");
-    const { data: contact } = await supabase
-      .from("contacts")
-      .select("id")
-      .ilike("email", emailPattern)
-      .limit(1)
-      .maybeSingle();
-
-    let accountId: string | null = null;
-    if (contact) {
-      const { data: account } = await supabase
-        .from("accounts")
-        .select("id")
-        .eq("contact_id", contact.id)
-        .limit(1)
-        .maybeSingle();
-      accountId = account?.id ?? null;
-    }
-
     const { data: ticket, error: ticketError } = await supabase
       .from("tickets")
       .insert({
-        account_id: accountId,
-        contact_id: contact?.id ?? null,
+        account_id: null,
+        contact_id: null,
+        verified: false,
         submitter_email: data.email,
         subject: data.subject,
         description: data.description,
         channel: "portal",
-        agent_id: data.agent_id || null,
-        status: "new",
+        status: "awaiting_customer",
         severity: data.severity,
       })
-      .select("id, ticket_number, view_token")
+      .select("id, ticket_number, email_verification_token")
       .single();
 
     if (ticketError || !ticket) {
@@ -88,7 +65,7 @@ export async function POST(request: NextRequest) {
     // Never derive the emailed link from the request's Host header — a spoofed
     // Host must not be able to point "Track your ticket" at another domain.
     const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://triple3labs.io").replace(/\/$/, "");
-    const viewUrl = `${baseUrl}/ticket/${ticket.id}?token=${ticket.view_token}`;
+    const viewUrl = `${baseUrl}/api/tickets/public?id=${ticket.id}&token=${ticket.email_verification_token}`;
 
     after(async () => {
       const results = await Promise.allSettled([
@@ -116,7 +93,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(
-      { success: true, ticket_number: ticket.ticket_number, view_url: viewUrl },
+      { success: true, ticket_number: ticket.ticket_number },
       { status: 201 }
     );
   } catch (error) {
@@ -126,4 +103,63 @@ export async function POST(request: NextRequest) {
     console.error("Public ticket submission error:", error);
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
+}
+
+// Only the emailed verification token can establish control of the claimed email.
+// It is separate from view_token because older POST responses exposed view_token.
+export async function GET(request: NextRequest) {
+  const parsed = z.object({ id: z.uuid(), token: z.uuid() }).safeParse({
+    id: request.nextUrl.searchParams.get("id"),
+    token: request.nextUrl.searchParams.get("token"),
+  });
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid verification link" }, { status: 400 });
+  }
+  const supabase = createAdminClient();
+  const { data: ticket, error } = await supabase.from("tickets")
+    .select("id, submitter_email, verified, view_token")
+    .eq("id", parsed.data.id)
+    .eq("email_verification_token", parsed.data.token)
+    .single();
+  if (error || !ticket) {
+    return NextResponse.json({ error: "Verification link not found" }, { status: 404 });
+  }
+
+  if (!ticket.verified) {
+    const emailPattern = ticket.submitter_email?.replace(/[\\%_]/g, "\\$&");
+    if (!emailPattern) {
+      return NextResponse.json({ error: "No email to verify" }, { status: 400 });
+    }
+    const { data: contacts, error: contactError } = await supabase.from("contacts")
+      .select("id").ilike("email", emailPattern).limit(2);
+    if (contactError) {
+      return NextResponse.json({ error: "Could not verify ticket" }, { status: 500 });
+    }
+    // Ambiguous email matches remain unlinked for the admin to resolve.
+    const contact = contacts?.length === 1 ? contacts[0] : null;
+    let accountId: string | null = null;
+    if (contact) {
+      const { data: accounts, error: accountError } = await supabase.from("accounts")
+        .select("id").eq("contact_id", contact.id).limit(2);
+      if (accountError) {
+        return NextResponse.json({ error: "Could not verify ticket" }, { status: 500 });
+      }
+      if (accounts?.length === 1) accountId = accounts[0].id;
+    }
+    const { error: updateError } = await supabase.from("tickets").update({
+      verified: true,
+      contact_id: contact?.id ?? null,
+      account_id: accountId,
+      status: "new",
+    }).eq("id", ticket.id).eq("email_verification_token", parsed.data.token).eq("verified", false);
+    if (updateError) {
+      return NextResponse.json({ error: "Could not verify ticket" }, { status: 500 });
+    }
+  }
+
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://triple3labs.io").replace(/\/$/, "");
+  return NextResponse.redirect(`${baseUrl}/ticket/${ticket.id}?token=${ticket.view_token}`, {
+    status: 303,
+    headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" },
+  });
 }

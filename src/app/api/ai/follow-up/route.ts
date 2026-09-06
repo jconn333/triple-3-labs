@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       contact_id: contactId,
       input: { contactId },
       output: draft,
-      model: "claude-haiku-4-5-20251001",
+      model: draft.model,
       latency_ms: latencyMs,
     });
 

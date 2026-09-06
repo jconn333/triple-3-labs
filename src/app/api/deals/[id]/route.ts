@@ -69,35 +69,10 @@ export async function DELETE(
 
   const { id } = await params;
 
-  // Look up the associated contact so we can clean it up as well
-  const { data: deal } = await supabase
-    .from("deals")
-    .select("contact_id")
-    .eq("id", id)
-    .single();
-
-  const contactId = deal?.contact_id as string | null | undefined;
-
-  // Remove activities tied to the deal and/or contact first (no FK cascade assumed)
-  if (contactId) {
-    await supabase.from("activities").delete().eq("contact_id", contactId);
-  } else {
-    await supabase.from("activities").delete().eq("deal_id", id);
-  }
-
+  // activities.deal_id is ON DELETE SET NULL; preserve the contact and history.
   const { error: dealError } = await supabase.from("deals").delete().eq("id", id);
   if (dealError) {
     return NextResponse.json({ error: dealError.message }, { status: 500 });
-  }
-
-  if (contactId) {
-    const { error: contactError } = await supabase
-      .from("contacts")
-      .delete()
-      .eq("id", contactId);
-    if (contactError) {
-      return NextResponse.json({ error: contactError.message }, { status: 500 });
-    }
   }
 
   return NextResponse.json({ success: true });

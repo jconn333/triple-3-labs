@@ -82,6 +82,8 @@ async function findOrCreatePrices(
 export interface SetupFeeLinks {
   achUrl: string;
   cardUrl: string;
+  achCents: number;
+  cardCents: number;
 }
 
 /**
@@ -141,7 +143,7 @@ export async function createSetupFeeLinks(params: {
     metadata: { ...card.metadata, sibling_link_id: ach.id },
   });
 
-  return { achUrl: ach.url, cardUrl: card.url };
+  return { achUrl: ach.url, cardUrl: card.url, achCents: params.setupFeeCents, cardCents: cardCentsFor(params.setupFeeCents) };
 }
 
 /**

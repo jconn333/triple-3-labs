@@ -44,11 +44,11 @@ export async function GET(
   }
 
   try {
-    const existing = await findExistingMonthlySubscription(account.stripe_customer_id, id);
+    const existing = await findExistingMonthlySubscription(account.stripe_customer_id);
     if (existing) {
       return NextResponse.json({
         eligible: false,
-        reason: `A monthly subscription already exists (status: ${existing.status}).`,
+        reason: `A subscription or schedule already exists (status: ${existing.status}).`,
       });
     }
     const baseAchCents = resolveMonthlyBaseCents(account.mrr as number | null);
@@ -90,10 +90,10 @@ export async function POST(
   }
 
   try {
-    const existing = await findExistingMonthlySubscription(account.stripe_customer_id, id);
+    const existing = await findExistingMonthlySubscription(account.stripe_customer_id);
     if (existing) {
       return NextResponse.json(
-        { error: `A monthly subscription already exists (status: ${existing.status})` },
+        { error: `A subscription or schedule already exists (status: ${existing.status})` },
         { status: 409 }
       );
     }

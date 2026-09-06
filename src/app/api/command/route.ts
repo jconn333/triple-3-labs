@@ -193,7 +193,7 @@ export async function GET() {
     viewsRes,
     snoozesRes,
   ] = await Promise.all([
-    supabase.from("accounts").select("*, contact:contacts(first_name,last_name,email,company)"),
+    supabase.from("accounts").select("*, contact:contacts(first_name,last_name,email,company)").eq("status", "active"),
     supabase.from("commitments").select("*").order("next_due", { ascending: true, nullsFirst: false }),
     supabase.from("deliveries").select("*").order("delivered_at", { ascending: false }),
     supabase.from("activities").select("*").order("created_at", { ascending: false }).limit(300),
@@ -589,7 +589,7 @@ export async function GET() {
 
   // ---------- KPIs ----------
   const kpis: CommandKpis = {
-    mrr: clients.reduce((s, c) => s + (c.mrr ?? 0), 0),
+    mrr: revenue.rollup.lockedMrr,
     customers: clients.length,
     customersBilling: clients.filter((c) => c.billingSetUp).length,
     customersOnboarding: clients.filter((c) => c.status === "onboarding").length,

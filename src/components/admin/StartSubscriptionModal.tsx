@@ -46,10 +46,14 @@ export default function StartSubscriptionModal({
       : null;
 
   async function handleStart() {
+    if (loading || starting || !preview?.eligible) return;
     setStarting(true);
     try {
       const res = await fetch(`/api/accounts/${accountId}/subscription`, { method: "POST" });
       const data = await res.json();
+      if (res.status === 409) {
+        setPreview({ eligible: false, reason: data.error });
+      }
       if (!res.ok) throw new Error(data.error || "Failed to start subscription");
       toast.success(`Subscription started — ${amount}/mo`);
       onStarted();

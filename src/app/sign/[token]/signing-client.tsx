@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, FileText, Loader2, PenLine, XCircle } from "lucide-react";
 
+import { formatCurrency } from "@/lib/utils/format";
+import type { SetupFeeLinks } from "@/lib/billing/setup-fee";
+
 const CONSENT_TEXT =
   "I agree to conduct this transaction electronically and to be legally bound by my " +
   "electronic signature, which I intend to serve as my signature on this document, " +
@@ -24,7 +27,7 @@ export default function SigningClient({ token }: { token: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [justSigned, setJustSigned] = useState(false);
-  const [payment, setPayment] = useState<{ achUrl: string; cardUrl: string } | null>(null);
+  const [payment, setPayment] = useState<SetupFeeLinks | null>(null);
 
   const [consent, setConsent] = useState(false);
   const [typedName, setTypedName] = useState("");
@@ -162,27 +165,26 @@ export default function SigningClient({ token }: { token: string }) {
           <div className="glass-card rounded-2xl p-8">
             <h2 className="mb-1 text-lg font-semibold">Next step: implementation fee</h2>
             <p className="mb-6 text-sm text-white/50">
-              Per Section 3.1 of the agreement, the one-time $1,500 implementation fee is due to
-              get started. Pay by bank transfer, or by card (a 3% processing fee applies to card
-              payments per Section 3.4).
+              The one-time {formatCurrency(payment.achCents / 100, 2)} implementation fee is due to
+              get started. Pay by bank transfer, or by card (the card total includes processing fees).
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <a
                 href={payment.achUrl}
                 className="flex-1 rounded-lg bg-violet-600 px-6 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-violet-500"
               >
-                Pay $1,500 — Bank (ACH)
+                Pay {formatCurrency(payment.achCents / 100, 2)} — Bank (ACH)
               </a>
               <a
                 href={payment.cardUrl}
                 className="flex-1 rounded-lg border border-white/15 bg-white/5 px-6 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-white/10"
               >
-                Pay $1,545 — Card
+                Pay {formatCurrency(payment.cardCents / 100, 2)} — Card
               </a>
             </div>
             <p className="mt-4 text-center text-[11px] text-white/30">
               Payments are processed securely by Stripe. Your payment method is saved for the
-              monthly service fee, which begins when your SEO agent goes live. These links are
+              future service payments under your agreement. These links are
               also in your email.
             </p>
           </div>

@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       contact_id: contactId,
       input: contactData,
       output: score,
-      model: "claude-haiku-4-5-20251001",
+      model: score.model,
       latency_ms: latencyMs,
     });
 

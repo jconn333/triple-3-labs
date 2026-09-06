@@ -128,7 +128,7 @@ async function markSetupFeePaid(session: Stripe.Checkout.Session): Promise<void>
     .update({
       setup_fee_paid_at: paidAt,
       setup_fee_payment_intent: paymentIntent ?? null,
-      stripe_customer_id: account.stripe_customer_id ?? customerId ?? null,
+      stripe_customer_id: customerId ?? account.stripe_customer_id ?? null,
       updated_at: paidAt,
     })
     .eq("id", accountId);
@@ -143,9 +143,10 @@ async function markSetupFeePaid(session: Stripe.Checkout.Session): Promise<void>
     contact_id: account.contact_id,
     type: "payment_received",
     title: `Implementation fee paid: ${amount} (${method})`,
-    description: `Setup fee received via Stripe. Payment method saved for the monthly subscription.`,
+    description: `Setup fee received via Stripe. Payment method saved for the monthly subscription.${customerId && account.stripe_customer_id && customerId !== account.stripe_customer_id ? ` Stripe customer changed from ${account.stripe_customer_id} to ${customerId} (paying checkout customer).` : ""}`,
     metadata: {
       stripe_customer_id: customerId,
+      previous_stripe_customer_id: account.stripe_customer_id,
       payment_intent: paymentIntent,
       checkout_session: session.id,
       method,
