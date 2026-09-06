@@ -66,12 +66,11 @@ const LINK_KIND_LABEL: Record<string, string> = {
   other: "Doc",
 };
 
-/** Who did the latest thing — agent work gets the accent so it stands out. */
-const actor = (by: string | null | undefined): { label: string; tone: "accent" | "good" | "neutral" } | null => {
+/** Who did the latest thing — only agent work gets a badge; payments read fine as plain text. */
+const actor = (by: string | null | undefined): { label: string; tone: "accent" } | null => {
   if (!by) return null;
   const b = by.toLowerCase();
   if (b.includes("agent") || b.includes("delivery")) return { label: "Agent", tone: "accent" };
-  if (b.includes("payment") || b.includes("invoice") || b.includes("stripe")) return { label: "Stripe", tone: "good" };
   return null;
 };
 
@@ -296,14 +295,17 @@ function ClientRows({ clients, queue }: { clients: CommandClient[]; queue: Queue
                   <span className="hidden md:block">
                     <StatusBadge kind="account" value={c.status} />
                   </span>
-                  <span className="whitespace-nowrap text-right text-sm font-medium tabular-nums text-ink">
+                  <span className="flex items-baseline justify-end whitespace-nowrap text-sm font-medium tabular-nums text-ink">
                     {money(c.mrr)}
                     <span className="font-normal text-ink-3">/mo</span>
-                    {!c.billingSetUp && (
-                      <span className="ml-1.5 text-warn" title="Billing not set up">
-                        ●
-                      </span>
-                    )}
+                    {/* fixed-width slot so the numbers stay aligned whether or not the dot shows */}
+                    <span
+                      className={cn("ml-1.5 inline-block w-2.5 text-center leading-none", c.billingSetUp ? "invisible" : "text-warn")}
+                      title={c.billingSetUp ? undefined : "Billing not set up"}
+                      aria-hidden={c.billingSetUp}
+                    >
+                      ●
+                    </span>
                   </span>
                   <span className="hidden min-w-0 items-center gap-2 text-sub text-ink-2 md:flex">
                     {who && (
