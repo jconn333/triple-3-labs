@@ -13,6 +13,30 @@ function getStripe(): Stripe {
   return _stripe;
 }
 
+/**
+ * Every Stripe customer that belongs to a client. Payment Links create a fresh
+ * customer per checkout unless one is prefilled, so a client who paid two links
+ * (e.g. Ultimate Chiropractic: $750/mo + $99/mo) has two customers under one
+ * email — and the account row only stores one id. Union the stored id with
+ * every customer on the contact's email so billing panels see all of it.
+ */
+export async function findStripeCustomerIds(params: {
+  knownId?: string | null;
+  email?: string | null;
+}): Promise<string[]> {
+  const ids = new Set<string>();
+  if (params.knownId) ids.add(params.knownId);
+  if (params.email) {
+    try {
+      const { data } = await getStripe().customers.list({ email: params.email, limit: 20 });
+      for (const c of data) if (!c.deleted) ids.add(c.id);
+    } catch {
+      // email lookup is best-effort; the stored id still works
+    }
+  }
+  return [...ids];
+}
+
 export async function createStripeCustomer(params: {
   email: string;
   name: string;
