@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { formatDate, formatRelativeTime, formatCurrency } from "@/lib/utils/format";
+import { isWebUrl } from "@/lib/crm/links";
 import { cn } from "@/lib/utils/cn";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { RecordShell, Fact, Details } from "@/components/admin/RecordShell";
@@ -833,24 +834,40 @@ export default function ClientPage() {
               <EmptyState title="Nothing attached yet" body="Audits, proposals, websites, dossiers and code locations show up here." />
             ) : (
               <PanelRows>
-                {links.map((l) => (
-                  <a
-                    key={l.id}
-                    href={l.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group flex items-center gap-3 px-4 py-2.5 hover:bg-surface-2"
-                  >
-                    <span className="w-16 shrink-0 rounded bg-surface-2 px-1 py-0.5 text-center text-[11px] text-ink-2 group-hover:bg-surface">
-                      {LINK_KIND_LABEL[l.kind] ?? l.kind}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm text-ink group-hover:underline">{l.title}</span>
-                    <span className="shrink-0 text-xs tabular-nums text-ink-3">
-                      {l.views !== null ? `${l.views} views${l.lastViewed ? ` · ${formatRelativeTime(l.lastViewed)}` : ""}` : formatDate(l.createdAt)}
-                    </span>
-                    <ExternalLink size={13} className="shrink-0 text-ink-3" />
-                  </a>
-                ))}
+                {links.map((l) => {
+                  const web = isWebUrl(l.url);
+                  const rowClass = "group flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-2";
+                  const inner = (
+                    <>
+                      <span className="w-16 shrink-0 rounded bg-surface-2 px-1 py-0.5 text-center text-[11px] text-ink-2 group-hover:bg-surface">
+                        {LINK_KIND_LABEL[l.kind] ?? l.kind}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-sm text-ink group-hover:underline">{l.title}</span>
+                      <span className="shrink-0 text-xs tabular-nums text-ink-3">
+                        {l.views !== null ? `${l.views} views${l.lastViewed ? ` · ${formatRelativeTime(l.lastViewed)}` : ""}` : formatDate(l.createdAt)}
+                      </span>
+                      {web ? <ExternalLink size={13} className="shrink-0 text-ink-3" /> : <Copy size={13} className="shrink-0 text-ink-3" />}
+                    </>
+                  );
+                  // Local paths can't be opened from the browser — copy them instead of 404ing.
+                  return web ? (
+                    <a key={l.id} href={l.url} target="_blank" rel="noreferrer" className={rowClass}>
+                      {inner}
+                    </a>
+                  ) : (
+                    <button
+                      key={l.id}
+                      type="button"
+                      title={`Local path — click to copy: ${l.url}`}
+                      className={rowClass}
+                      onClick={() => {
+                        navigator.clipboard.writeText(l.url).then(() => toast.success("Path copied"));
+                      }}
+                    >
+                      {inner}
+                    </button>
+                  );
+                })}
               </PanelRows>
             )}
           </Panel>

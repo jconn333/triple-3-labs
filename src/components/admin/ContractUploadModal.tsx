@@ -62,8 +62,10 @@ export default function ContractUploadModal({ accountId, onClose, onUploaded }: 
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Upload failed");
+        if (res.status === 401) throw new Error("Your session has expired — reload the page, sign in, and try again.");
+        if (res.status === 413) throw new Error("File too large for the server (limit ~4.5MB). Compress the PDF and retry.");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Upload failed (${res.status})`);
       }
 
       toast.success("Contract uploaded");

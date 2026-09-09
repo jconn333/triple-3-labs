@@ -63,6 +63,23 @@ function parseFlags(args) {
 }
 const short = (s, n = 90) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 
+// client_links.url must open in a browser. Dossier/code locations are often
+// given as local paths; map the two known repos to their GitHub tree URLs and
+// refuse anything else that isn't http(s) — a Mac path 404s on triple3labs.io.
+const LOCAL_REPOS = [
+  { prefix: "Dev/triple3-business/", web: "https://github.com/jconn333/triple3-business/tree/main/" },
+  { prefix: "Dev/triple_3_platform/", web: "https://github.com/jconn333/triple-3-platform/tree/main/" },
+];
+function toWebUrl(u) {
+  if (/^https?:\/\//i.test(u)) return u;
+  const home = process.env.HOME ?? "";
+  let p = u.startsWith("~/") ? u.slice(2) : home && u.startsWith(home + "/") ? u.slice(home.length + 1) : null;
+  if (p === null) die(`Not a web URL: ${u}. Give an http(s) link (or a path inside ~/Dev/triple3-business or ~/Dev/triple_3_platform).`);
+  p = p.replace(/\/+$/, "");
+  for (const r of LOCAL_REPOS) if (p.startsWith(r.prefix)) return r.web + p.slice(r.prefix.length);
+  die(`Not a web URL: ${u}. Only paths inside ~/Dev/triple3-business or ~/Dev/triple_3_platform can be mapped to GitHub.`);
+}
+
 async function q(promise, what) {
   const { data, error } = await promise;
   if (error) die(`${what}: ${error.message}`);
@@ -289,8 +306,10 @@ switch (cmd) {
   }
 
   case "attach-link": {
-    const [who, linkUrl] = pos;
-    if (!who || !linkUrl) die('Usage: attach-link <who> <url> [--kind ...] [--title "..."]');
+    const [who, rawUrl] = pos;
+    if (!who || !rawUrl) die('Usage: attach-link <who> <url> [--kind ...] [--title "..."]');
+    const linkUrl = toWebUrl(rawUrl);
+    if (linkUrl !== rawUrl) console.error(`↪ stored as ${linkUrl}`);
     const t = await resolveTarget(who);
     if (!t.account_id && !t.deal_id) die("Links attach to accounts or deals — matched only a bare contact.");
     let prospect_report_id = null;

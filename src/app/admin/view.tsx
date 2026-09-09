@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, ExternalLink, Flag } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { isWebUrl } from "@/lib/crm/links";
 import {
   Badge,
   Button,
@@ -330,7 +331,9 @@ function ClientRows({ clients, queue }: { clients: CommandClient[]; queue: Queue
                       {c.links.map((l) => (
                         <a
                           key={l.id}
-                          href={l.url}
+                          // Local paths can't open from the browser; show them as inert rows.
+                          href={isWebUrl(l.url) ? l.url : undefined}
+                          title={isWebUrl(l.url) ? undefined : l.url}
                           target="_blank"
                           rel="noreferrer"
                           className="group -mx-1.5 flex items-center gap-2 rounded px-1.5 py-1 hover:bg-surface"
