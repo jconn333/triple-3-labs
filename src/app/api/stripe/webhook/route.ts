@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { deactivateAllSetupFeeLinks } from "@/lib/billing/setup-fee";
+import { findStripeCustomerIds } from "@/lib/stripe";
 
 /**
  * Stripe webhook. Currently handles implementation-fee payments made through
@@ -102,48 +103,51 @@ async function markSetupFeePaid(session: Stripe.Checkout.Session): Promise<void>
   const paymentIntent =
     typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
 
-  const { data: account } = await admin
+  const { data: account, error: accountError } = await admin
     .from("accounts")
     .select("id, contact_id, setup_fee_paid_at, stripe_customer_id")
     .eq("id", accountId)
     .single();
-  if (!account) return;
+  if (accountError) throw accountError;
+  if (!account) throw new Error(`Setup-fee account not found: ${accountId}`);
   if (account.setup_fee_paid_at) {
     // Already recorded (e.g. a stale link got paid twice) — still make sure no
     // link stays active, and leave a loud trace for follow-up/refund.
     await deactivateAllSetupFeeLinks(accountId).catch(() => {});
-    await admin.from("activities").insert({
+    const { error } = await admin.from("activities").insert({
       account_id: accountId,
       contact_id: account.contact_id,
       type: "payment_received",
       title: "DUPLICATE implementation-fee payment received — review for refund",
       description: `A second setup-fee payment came in after the fee was already marked paid. Checkout session ${session.id}.`,
-      metadata: { checkout_session: session.id },
+      metadata: { checkout_session: session.id, stripe_customer_id: customerId },
     });
+    if (error) throw error;
     return;
   }
 
-  await admin
+  const { error: updateError } = await admin
     .from("accounts")
     .update({
       setup_fee_paid_at: paidAt,
       setup_fee_payment_intent: paymentIntent ?? null,
-      stripe_customer_id: customerId ?? account.stripe_customer_id ?? null,
+      stripe_customer_id: account.stripe_customer_id ?? customerId ?? null,
       updated_at: paidAt,
     })
     .eq("id", accountId);
+  if (updateError) throw updateError;
 
   const method = session.metadata?.method === "card" ? "card" : "ACH";
   const amount = ((session.amount_total ?? 0) / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "usd",
   });
-  await admin.from("activities").insert({
+  const { error: activityError } = await admin.from("activities").insert({
     account_id: accountId,
     contact_id: account.contact_id,
     type: "payment_received",
     title: `Implementation fee paid: ${amount} (${method})`,
-    description: `Setup fee received via Stripe. Payment method saved for the monthly subscription.${customerId && account.stripe_customer_id && customerId !== account.stripe_customer_id ? ` Stripe customer changed from ${account.stripe_customer_id} to ${customerId} (paying checkout customer).` : ""}`,
+    description: `Setup fee received via Stripe.${customerId && account.stripe_customer_id && customerId !== account.stripe_customer_id ? ` Additional paying Stripe customer: ${customerId}; primary customer preserved.` : ""}`,
     metadata: {
       stripe_customer_id: customerId,
       previous_stripe_customer_id: account.stripe_customer_id,
@@ -152,6 +156,7 @@ async function markSetupFeePaid(session: Stripe.Checkout.Session): Promise<void>
       method,
     },
   });
+  if (activityError) throw activityError;
 
   // Retire every outstanding setup-fee link for this account (not just this pair).
   await deactivateAllSetupFeeLinks(accountId).catch((e) =>
@@ -159,25 +164,53 @@ async function markSetupFeePaid(session: Stripe.Checkout.Session): Promise<void>
   );
 }
 
-/** Subscription invoices → account timeline (matched by Stripe customer id). */
+/** Resolve exact ownership first, then the account contact's billing email. */
+async function findInvoiceAccount(customerId: string) {
+  const admin = createAdminClient();
+  const { data: direct, error } = await admin.from("accounts")
+    .select("id, contact_id").eq("stripe_customer_id", customerId);
+  if (error) throw error;
+  if (direct?.length === 1) return direct[0];
+  if (direct?.length) return null; // Ambiguous ownership must never pick a client.
+
+  const customer = await getStripe().customers.retrieve(customerId);
+  if (customer.deleted || !customer.email) return null;
+  const email = customer.email.trim();
+  const { data: candidates, error: lookupError } = await admin.from("accounts")
+    .select("id, contact_id, stripe_customer_id, contact:contacts!inner(email)")
+    .ilike("contact.email", email.replace(/[\\%_]/g, "\\$&"));
+  if (lookupError) throw lookupError;
+  if (candidates?.length !== 1) return null;
+  const account = candidates[0];
+  const customerIds = await findStripeCustomerIds({
+    knownId: account.stripe_customer_id, email, strict: true,
+  });
+  return customerIds.includes(customerId) ? account : null;
+}
+
+/** Subscription invoices → account timeline, including secondary checkout customers. */
 async function logInvoiceActivity(invoice: Stripe.Invoice, outcome: "paid" | "failed"): Promise<void> {
   const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
-  if (!customerId) return;
-
   const admin = createAdminClient();
-  const { data: account } = await admin
-    .from("accounts")
-    .select("id, contact_id")
-    .eq("stripe_customer_id", customerId)
-    .single();
-  if (!account) return; // not one of ours (e.g. unrelated Stripe activity)
+  const account = customerId ? await findInvoiceAccount(customerId) : null;
+  if (!account) {
+    const { error } = await admin.from("activities").insert({
+      account_id: null,
+      type: "unmatched_stripe_event",
+      title: `Unmatched Stripe invoice ${outcome}: ${invoice.number ?? invoice.id}`,
+      description: "No unique CRM account matches this invoice customer; review account ownership.",
+      metadata: { invoice_id: invoice.id, stripe_customer_id: customerId, outcome },
+    });
+    if (error) throw error;
+    return;
+  }
 
   const amount = ((outcome === "paid" ? invoice.amount_paid : invoice.amount_due) / 100).toLocaleString(
     "en-US",
     { style: "currency", currency: "usd" }
   );
   const cycle = invoice.billing_reason === "subscription_create" ? "first" : "monthly";
-  await admin.from("activities").insert({
+  const { error } = await admin.from("activities").insert({
     account_id: account.id,
     contact_id: account.contact_id,
     type: outcome === "paid" ? "payment_received" : "payment_failed",
@@ -189,8 +222,9 @@ async function logInvoiceActivity(invoice: Stripe.Invoice, outcome: "paid" | "fa
       outcome === "paid"
         ? `Invoice ${invoice.number ?? invoice.id} paid.`
         : `Invoice ${invoice.number ?? invoice.id} did not collect. Stripe will retry per its dunning settings.`,
-    metadata: { invoice_id: invoice.id, billing_reason: invoice.billing_reason },
+    metadata: { invoice_id: invoice.id, billing_reason: invoice.billing_reason, stripe_customer_id: customerId },
   });
+  if (error) throw error;
 }
 
 async function logActivity(
@@ -200,13 +234,14 @@ async function logActivity(
   const admin = createAdminClient();
   const accountId = session.metadata?.account_id;
   if (!accountId) return;
-  const { data: account } = await admin
+  const { data: account, error: accountError } = await admin
     .from("accounts")
     .select("contact_id")
     .eq("id", accountId)
     .single();
-  if (!account) return;
-  await admin.from("activities").insert({
+  if (accountError) throw accountError;
+  if (!account) throw new Error(`Payment account not found: ${accountId}`);
+  const { error } = await admin.from("activities").insert({
     account_id: accountId,
     contact_id: account.contact_id,
     type: entry.type,
@@ -214,4 +249,5 @@ async function logActivity(
     description: entry.description,
     metadata: { checkout_session: session.id, method: session.metadata?.method },
   });
+  if (error) throw error;
 }

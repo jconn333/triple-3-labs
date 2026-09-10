@@ -23,6 +23,7 @@ function getStripe(): Stripe {
 export async function findStripeCustomerIds(params: {
   knownId?: string | null;
   email?: string | null;
+  strict?: boolean;
 }): Promise<string[]> {
   const ids = new Set<string>();
   if (params.knownId) ids.add(params.knownId);
@@ -30,7 +31,8 @@ export async function findStripeCustomerIds(params: {
     try {
       const { data } = await getStripe().customers.list({ email: params.email, limit: 20 });
       for (const c of data) if (!c.deleted) ids.add(c.id);
-    } catch {
+    } catch (error) {
+      if (params.strict) throw error;
       // email lookup is best-effort; the stored id still works
     }
   }
