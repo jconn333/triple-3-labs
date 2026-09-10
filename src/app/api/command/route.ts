@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createOpsClient } from "@/lib/supabase/ops";
+import { daysUntil, isOverdue } from "@/lib/utils/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,8 @@ export interface CommandCommitment {
   cadence: string | null;
   nextDue: string | null;
   active: boolean;
+  graceDays?: number;
+  delivered?: boolean;
 }
 
 export interface CommandClient {
@@ -194,7 +197,7 @@ export async function GET() {
     snoozesRes,
   ] = await Promise.all([
     supabase.from("accounts").select("*, contact:contacts(first_name,last_name,email,company)").eq("status", "active"),
-    supabase.from("commitments").select("*").order("next_due", { ascending: true, nullsFirst: false }),
+    supabase.from("commitments").select("*, deliveries(id)").limit(1, { referencedTable: "deliveries" }).order("next_due", { ascending: true, nullsFirst: false }),
     supabase.from("deliveries").select("*").order("delivered_at", { ascending: false }),
     supabase.from("activities").select("*").order("created_at", { ascending: false }).limit(300),
     supabase.from("client_links").select("*").order("created_at", { ascending: true }),
@@ -270,7 +273,8 @@ export async function GET() {
   const clients: CommandClient[] = accounts.map((a) => {
     const accountCommitments = commitmentsByAccount.get(a.id) ?? [];
     const active = accountCommitments.filter((c) => c.active);
-    const upcoming = active
+    const pending = active.filter((c) => !(c.kind === "one_time" && c.deliveries?.length > 0));
+    const upcoming = pending
       .map((c) => c.next_due as string | null)
       .filter((d): d is string => !!d)
       .sort();
@@ -290,9 +294,9 @@ export async function GET() {
       });
 
     const billingSetUp = !!a.stripe_customer_id;
-    // At risk: a recurring commitment is anchored and overdue past its grace.
-    const overdue = active.some(
-      (c) => c.kind === "recurring" && c.next_due && now - new Date(c.next_due).getTime() > 3 * DAY,
+    // Completed one-time work has no remaining due date or overdue state.
+    const overdue = pending.some(
+      (c) => isOverdue(c.next_due, c.grace_days, new Date(now)),
     );
     const status: CommandClient["status"] = overdue ? "at_risk" : billingSetUp ? "active" : "onboarding";
 
@@ -318,6 +322,8 @@ export async function GET() {
         cadence: c.cadence,
         nextDue: c.next_due,
         active: c.active,
+        graceDays: c.grace_days ?? 2,
+        delivered: c.kind === "one_time" && c.deliveries?.length > 0,
       })),
       links: accountLinks,
     };
@@ -425,7 +431,7 @@ export async function GET() {
     groups.set(key, g);
   }
   const prospects: CommandProspect[] = [...groups.values()]
-    .map(({ reportIds: _reportIds, ...p }) => p)
+    .map(({ reportIds, ...p }) => { void reportIds; return p; })
     .sort((a, b) => (b.lastViewed ?? "").localeCompare(a.lastViewed ?? ""));
 
   // ---------- agent fleet (triple3-ops telemetry, separate project) ----------
@@ -518,9 +524,9 @@ export async function GET() {
       });
     }
     for (const cm of c.commitments) {
-      if (!cm.nextDue) continue;
-      const dueIn = new Date(cm.nextDue).getTime() - now;
-      if (dueIn < 0) {
+      if (!cm.nextDue || cm.delivered) continue;
+      const dueIn = daysUntil(cm.nextDue, new Date(now));
+      if (isOverdue(cm.nextDue, cm.graceDays, new Date(now))) {
         queue.push({
           key: `overdue:${cm.id}`,
           severity: "crit",
@@ -528,7 +534,7 @@ export async function GET() {
           why: `was due ${cm.nextDue}`,
           accountId: c.accountId,
         });
-      } else if (dueIn < 7 * DAY) {
+      } else if (dueIn < 7) {
         queue.push({
           key: `duesoon:${cm.id}`,
           severity: "warn",

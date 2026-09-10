@@ -47,10 +47,14 @@ export async function GET(
   // Commitments (what we owe them), deliveries (what was done), and attached
   // docs/links — so the client page can show the whole relationship.
   const [commitmentsRes, linksRes] = await Promise.all([
-    supabase.from("commitments").select("*").eq("account_id", id).order("next_due", { ascending: true, nullsFirst: false }),
+    supabase.from("commitments").select("*, deliveries(id)").limit(1, { referencedTable: "deliveries" }).eq("account_id", id).order("next_due", { ascending: true, nullsFirst: false }),
     supabase.from("client_links").select("*").eq("account_id", id).order("created_at", { ascending: true }),
   ]);
-  const commitments = (commitmentsRes.data ?? []) as Record<string, unknown>[];
+  if (commitmentsRes.error) return NextResponse.json({ error: "Could not load commitments" }, { status: 500 });
+  const commitments = (commitmentsRes.data ?? []).map(({ deliveries, ...commitment }) => ({
+    ...commitment,
+    has_delivery: (deliveries as { id: string }[] | null)?.length ? true : false,
+  })) as Record<string, unknown>[];
   const links = (linksRes.data ?? []) as Record<string, unknown>[];
 
   const commitmentIds = commitments.map((c) => c.id as string);

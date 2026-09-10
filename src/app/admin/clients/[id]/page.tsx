@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { formatDate, formatRelativeTime, formatCurrency } from "@/lib/utils/format";
 import { isWebUrl } from "@/lib/crm/links";
+import { isOverdue } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { RecordShell, Fact, Details } from "@/components/admin/RecordShell";
@@ -61,6 +62,8 @@ interface Commitment {
   cadence: string | null;
   next_due: string | null;
   active: boolean;
+  grace_days?: number | null;
+  has_delivery?: boolean;
 }
 interface Delivery {
   id: string;
@@ -648,7 +651,8 @@ function ClientRecord({ id }: { id: string }) {
               ) : (
                 <PanelRows>
                   {commitments.map((c) => {
-                    const overdue = c.next_due && new Date(c.next_due).getTime() < Date.now() - 3 * 86_400_000;
+                    const delivered = c.kind === "one_time" && (c.has_delivery || deliveries.some((d) => d.commitment_id === c.id));
+                    const overdue = c.active && !delivered && isOverdue(c.next_due, c.grace_days);
                     const unanchored = c.kind === "recurring" && !c.next_due && c.active;
                     const last = deliveries.filter((d) => d.commitment_id === c.id)[0];
                     return (
@@ -661,7 +665,9 @@ function ClientRecord({ id }: { id: string }) {
                             {last ? ` · last ${formatRelativeTime(last.delivered_at)}` : ""}
                           </p>
                         </div>
-                        {!c.active ? (
+                        {delivered ? (
+                          <Badge tone="good">Delivered</Badge>
+                        ) : !c.active ? (
                           <Badge>Closed</Badge>
                         ) : overdue ? (
                           <Badge tone="bad" dot>Overdue {formatDate(c.next_due!)}</Badge>

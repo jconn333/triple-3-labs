@@ -1,5 +1,7 @@
 "use client";
 
+import { isOverdue, parseDateOnly } from "@/lib/utils/dates";
+
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, ExternalLink, Flag } from "lucide-react";
@@ -34,7 +36,7 @@ const money = (n: number | null | undefined) =>
   n === null || n === undefined ? "—" : `$${Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 
 const shortDate = (iso: string | null | undefined) =>
-  iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—";
+  iso ? parseDateOnly(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—";
 
 const relTime = (iso: string | null | undefined) => {
   if (!iso) return "—";
@@ -354,7 +356,7 @@ function ClientRows({ clients, queue }: { clients: CommandClient[]; queue: Queue
                       </div>
                       {c.commitments.length === 0 && <div className="text-sub text-ink-3">None recorded.</div>}
                       {c.commitments.map((cm) => {
-                        const overdue = cm.nextDue && new Date(cm.nextDue).getTime() < now;
+                        const overdue = !cm.delivered && isOverdue(cm.nextDue, cm.graceDays, new Date(now));
                         const unanchored = cm.kind === "recurring" && !cm.nextDue;
                         return (
                           <div key={cm.id} className="flex items-center gap-2 py-1 text-sub">
@@ -364,7 +366,7 @@ function ClientRows({ clients, queue }: { clients: CommandClient[]; queue: Queue
                             />
                             <span className="min-w-0 flex-1 truncate text-ink">{cm.name}</span>
                             <span className={cn("shrink-0 text-xs tabular-nums", overdue ? "text-bad" : "text-ink-3")}>
-                              {cm.nextDue ? shortDate(cm.nextDue) : unanchored ? "not anchored" : cm.kind}
+                              {cm.delivered ? "Delivered" : cm.nextDue ? shortDate(cm.nextDue) : unanchored ? "not anchored" : cm.kind}
                             </span>
                           </div>
                         );

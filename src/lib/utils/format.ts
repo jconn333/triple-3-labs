@@ -11,7 +11,7 @@ export function formatDate(date: string | Date): string {
   // Date-only values (Postgres `date` columns like commitments.next_due arrive
   // as "2026-10-01") would otherwise parse as UTC midnight and render a day
   // early in US timezones ("Sep 30"). Pin them to local midnight instead.
-  const value = typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T00:00:00`) : new Date(date);
+  const value = parseDateOnly(date);
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -39,3 +39,4 @@ export function daysInStage(createdDate: string): number {
   const created = new Date(createdDate);
   return Math.floor((now.getTime() - created.getTime()) / 86400000);
 }
+import { parseDateOnly } from "./dates";
