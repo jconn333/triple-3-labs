@@ -8,13 +8,13 @@ import { cardCentsFor } from "./setup-fee";
  * setup-fee payment: ACH at face value, card with the 3% processing surcharge.
  */
 
-// Fallback base (ACH) amount for accounts with no MRR recorded — the original
-// Eco Seal template price, so that flow is unchanged.
-export const MONTHLY_ACH_CENTS = 49_900; // $499.00
-
-/** Base (ACH) monthly amount in cents from an account's MRR (dollars), or the fallback. */
+/** Base (ACH) monthly amount in cents from explicit, valid account MRR (dollars). */
 export function resolveMonthlyBaseCents(mrr: number | null | undefined): number {
-  return mrr && mrr > 0 ? Math.round(mrr * 100) : MONTHLY_ACH_CENTS;
+  const cents = typeof mrr === "number" ? Math.round(mrr * 100) : NaN;
+  if (!Number.isFinite(mrr) || !Number.isSafeInteger(cents) || cents <= 0) {
+    throw new Error("Account has no MRR set; set it before starting a subscription");
+  }
+  return cents;
 }
 
 /** Charged monthly amount for a rail, given the ACH/base amount. */

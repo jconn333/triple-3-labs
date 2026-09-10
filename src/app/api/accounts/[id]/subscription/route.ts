@@ -12,12 +12,12 @@ async function loadAccount(accountId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { user: null, account: null };
-  const { data: account } = await supabase
+  const { data: account, error } = await supabase
     .from("accounts")
     .select("id, name, contact_id, stripe_customer_id, setup_fee_paid_at, mrr")
     .eq("id", accountId)
     .single();
-  return { user, account };
+  return { user, account, error };
 }
 
 /** Preview: what would "Start subscription" do for this account? */
@@ -26,9 +26,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { user, account } = await loadAccount(id);
+  const { user, account, error } = await loadAccount(id);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (error) return NextResponse.json({ error: "Could not load account" }, { status: 500 });
   if (!account) return NextResponse.json({ error: "Account not found" }, { status: 404 });
+
+  let baseAchCents: number;
+  try {
+    baseAchCents = resolveMonthlyBaseCents(account.mrr as number | null);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
 
   if (!account.stripe_customer_id) {
     return NextResponse.json({
@@ -51,7 +59,6 @@ export async function GET(
         reason: `A subscription or schedule already exists (status: ${existing.status}).`,
       });
     }
-    const baseAchCents = resolveMonthlyBaseCents(account.mrr as number | null);
     const method = await getSavedMethod(account.stripe_customer_id, baseAchCents);
     if (!method) {
       return NextResponse.json({
@@ -76,9 +83,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { user, account } = await loadAccount(id);
+  const { user, account, error } = await loadAccount(id);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (error) return NextResponse.json({ error: "Could not load account" }, { status: 500 });
   if (!account) return NextResponse.json({ error: "Account not found" }, { status: 404 });
+  let baseAchCents: number;
+  try {
+    baseAchCents = resolveMonthlyBaseCents(account.mrr as number | null);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
   if (!account.stripe_customer_id) {
     return NextResponse.json({ error: "No Stripe customer linked to this account" }, { status: 400 });
   }
@@ -98,7 +112,6 @@ export async function POST(
       );
     }
 
-    const baseAchCents = resolveMonthlyBaseCents(account.mrr as number | null);
     const { subscription, method } = await createMonthlySubscription({
       customerId: account.stripe_customer_id,
       accountId: id,
@@ -111,7 +124,7 @@ export async function POST(
       currency: "usd",
     });
     const admin = createAdminClient();
-    await admin.from("activities").insert({
+    const { error: activityError } = await admin.from("activities").insert({
       account_id: id,
       contact_id: account.contact_id,
       type: "subscription_started",
@@ -119,6 +132,7 @@ export async function POST(
       description: `Service Start Date. Charging ${method.label} today and on this day each month. Started by ${user.email}.`,
       metadata: { subscription_id: subscription.id, rail: method.rail },
     });
+    if (activityError) throw new Error("Subscription started, but its activity could not be saved; check billing before retrying");
 
     return NextResponse.json({
       success: true,
