@@ -109,6 +109,11 @@ function classify(type: string): { who: "agent" | "billing" | "you" | "client"; 
 
 export default function ClientPage() {
   const { id } = useParams<{ id: string }>();
+  // Dirty drafts and pending requests belong to this record only.
+  return <ClientRecord key={id} id={id} />;
+}
+
+function ClientRecord({ id }: { id: string }) {
   const [account, setAccount] = useState<Account | null>(null);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -138,12 +143,17 @@ export default function ClientPage() {
   const [resendCopied, setResendCopied] = useState(false);
   const [resending, setResending] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
-  const [notesSaved, setNotesSaved] = useState<"idle" | "saving" | "saved">("idle");
+  const [notesSaved, setNotesSaved] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const notesTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const notesDirtyRef = useRef(false);
+  const notesSequenceRef = useRef(0);
+  const notesSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const [tab, setTab] = useState<Tab>("activity");
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
 
   const fetchAccount = useCallback(async () => {
+    const notesSequence = notesSequenceRef.current;
+    const notesWereDirty = notesDirtyRef.current;
     try {
       const res = await fetch(`/api/accounts/${id}`);
       if (res.status === 404) {
@@ -159,7 +169,9 @@ export default function ClientPage() {
       setCommitments(data.commitments || []);
       setDeliveries(data.deliveries || []);
       setLinks(data.links || []);
-      setNotes(data.account.notes || "");
+      if (!notesWereDirty && !notesDirtyRef.current && notesSequence === notesSequenceRef.current) {
+        setNotes(data.account.notes || "");
+      }
     } catch {
       toast.error("Failed to load client");
     } finally {
@@ -255,20 +267,34 @@ export default function ClientPage() {
 
   function handleNotesChange(value: string) {
     setNotes(value);
+    notesDirtyRef.current = true;
+    const sequence = ++notesSequenceRef.current;
     setNotesSaved("saving");
     if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
-    notesTimerRef.current = setTimeout(async () => {
-      try {
-        await fetch(`/api/accounts/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ notes: value }),
-        });
-        setNotesSaved("saved");
-      } catch {
-        setNotesSaved("idle");
-        toast.error("Failed to save notes");
-      }
+    notesTimerRef.current = setTimeout(() => {
+      // Serialize requests as well as guarding UI state: an older PATCH must
+      // finish before the newer draft can be written to the database.
+      notesSaveQueueRef.current = notesSaveQueueRef.current.then(async () => {
+        if (sequence !== notesSequenceRef.current) return;
+        try {
+          const res = await fetch(`/api/accounts/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ notes: value }),
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(res.status === 401 ? "Session expired; reload after copying your notes." : data.error || "Failed to save notes");
+          }
+          if (sequence === notesSequenceRef.current) {
+            notesDirtyRef.current = false;
+            setNotesSaved("saved");
+          }
+        } catch (err) {
+          if (sequence === notesSequenceRef.current) setNotesSaved("error");
+          toast.error(err instanceof Error ? err.message : "Failed to save notes");
+        }
+      });
     }, 1000);
   }
 
@@ -492,8 +518,9 @@ export default function ClientPage() {
             <Panel>
               <PanelHeader title="Notes">
                 <span className="text-xs text-ink-3">
-                  {notesSaved === "saving" ? "Saving…" : notesSaved === "saved" ? "Saved" : "Autosaves"}
+                  {notesSaved === "saving" ? "Saving…" : notesSaved === "saved" ? "Saved" : notesSaved === "error" ? "Not saved" : "Autosaves"}
                 </span>
+                {notesSaved === "error" && <Button size="sm" onClick={() => handleNotesChange(notes)}>Retry</Button>}
               </PanelHeader>
               <div className="p-3">
                 <Textarea
