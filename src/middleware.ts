@@ -10,7 +10,8 @@ export const config = {
   // on the fetches the admin makes too, otherwise a tab left open past the
   // access-token lifetime posts with a stale token and gets 401 Unauthorized
   // (seen on contract upload). Public routes (stripe webhooks, /sign, contact,
-  // onboarding forms, blog) are deliberately left out.
+  // onboarding forms and public blog pages) are deliberately left out.
+  // /api/blog is the authenticated editor API, not the public blog.
   matcher: [
     "/admin/:path*",
     "/api/accounts/:path*",
@@ -22,5 +23,6 @@ export const config = {
     "/api/command/:path*",
     "/api/mission-control/:path*",
     "/api/ai/:path*",
+    "/api/blog/:path*",
   ],
 };
