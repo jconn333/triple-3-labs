@@ -23,6 +23,12 @@
 //   record-delivery <account> <commitment> <summary> [--url u]
 //   anchor <account> <commitment> <YYYY-MM-DD>   set a commitment's next_due
 //   set-mrr <account> <amount>
+//   add-commitment <account> "<name>" --kind recurring|continuous|one_time
+//                                        [--cadence monthly] [--due YYYY-MM-DD] [--agent id] [--customer id]
+//                                        [--source "..."] [--notes "..."]
+//   edit-commitment <account> <commitment> [--name "..."] [--due YYYY-MM-DD] [--active true|false] [--notes "..."]
+//   mark-contract-signed <account> <contract-title-or-id> [--signed-on YYYY-MM-DD] [--note "..."]
+//   list-links <account|deal>            print link id, kind, title, url
 //
 // <who>/<deal>/<account> are fuzzy name matches; ambiguity lists candidates
 // and exits 2 so the caller can retry with a tighter query.
@@ -51,15 +57,48 @@ function die(msg, code = 1) {
 function ok(msg) {
   console.log(`✓ ${msg}`);
 }
-function parseFlags(args) {
+const COMMAND_FLAGS = {
+  find: [], status: [], "move-deal": [],
+  "add-prospect": ["contact", "email", "phone", "deal", "amount", "stage", "note"],
+  "add-deal": ["amount", "stage"], log: ["type"],
+  "attach-link": ["kind", "title"], "remove-link": [],
+  "record-delivery": ["url"], anchor: [], "set-mrr": [],
+  "add-commitment": ["kind", "cadence", "due", "agent", "customer", "source", "notes"],
+  "edit-commitment": ["name", "due", "active", "notes"],
+  "mark-contract-signed": ["signed-on", "note"], "list-links": [],
+};
+const COMMITMENT_KINDS = ["recurring", "continuous", "one_time"];
+// Production cadence is unconstrained text. Monthly is the only cadence the
+// existing delivery trigger advances; reject unsupported schedules explicitly.
+const SUPPORTED_CADENCES = ["monthly"];
+const LINK_KINDS = ["audit", "proposal", "report", "website", "ads_plan", "contract", "onboarding", "dossier", "code", "other"];
+function parseFlags(args, accepted) {
   const pos = [];
   const flags = {};
   for (let i = 0; i < args.length; i++) {
     if (args[i].startsWith("--")) {
-      flags[args[i].slice(2)] = args[i + 1] && !args[i + 1].startsWith("--") ? args[++i] : true;
+      const name = args[i].slice(2);
+      if (!accepted.includes(name)) die(`Unknown flag --${name}. Accepted flags: ${accepted.map((f) => `--${f}`).join(", ") || "(none)"}`);
+      if (args[i + 1] === undefined || args[i + 1].startsWith("--")) die(`--${name} requires a value.`);
+      flags[name] = args[++i];
     } else pos.push(args[i]);
   }
   return { pos, flags };
+}
+function validateDate(value, label = "date") {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value ?? "") ? new Date(`${value}T00:00:00Z`) : new Date(NaN);
+  if (!Number.isFinite(date.getTime()) || value.startsWith("0000-") || date.toISOString().slice(0, 10) !== value) die(`Invalid ${label}: ${value}. Use a real calendar date (YYYY-MM-DD).`);
+  return value;
+}
+function nonempty(value, label) {
+  if (typeof value !== "string" || !value.trim()) die(`${label} must not be empty.`);
+  return value.trim();
+}
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+async function resolveCommitment(accountId, query) {
+  const lookup = db.from("commitments").select("*").eq("account_id", accountId);
+  const rows = await q(UUID_RE.test(query) ? lookup.eq("id", query) : lookup.ilike("name", `%${query}%`), "commitments lookup");
+  return pickOne(rows, "commitment", (r) => `${r.name} [${r.id}]`);
 }
 const short = (s, n = 90) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 
@@ -166,7 +205,8 @@ const REPORT_URL_RE = /triple3labs\.io\/r\/([A-Za-z0-9_-]+)/;
 
 // ---------- commands ----------
 const [, , cmd, ...rest] = process.argv;
-const { pos, flags } = parseFlags(rest);
+if (!Object.hasOwn(COMMAND_FLAGS, cmd)) die(`Unknown command "${cmd ?? ""}". Commands: ${Object.keys(COMMAND_FLAGS).join(", ")}`);
+const { pos, flags } = parseFlags(rest, COMMAND_FLAGS[cmd]);
 
 switch (cmd) {
   case "find": {
@@ -327,6 +367,7 @@ switch (cmd) {
     }
     title = title ?? linkUrl;
     kind = kind ?? "other";
+    if (!LINK_KINDS.includes(kind)) die(`Invalid --kind. Accepted: ${LINK_KINDS.join(", ")}`);
     const row = await q(
       db
         .from("client_links")
@@ -378,6 +419,7 @@ switch (cmd) {
   case "anchor": {
     const [accountQ, commitmentQ, date] = pos;
     if (!accountQ || !commitmentQ || !/^\d{4}-\d{2}-\d{2}$/.test(date ?? "")) die("Usage: anchor <account> <commitment> <YYYY-MM-DD>");
+    validateDate(date);
     const account = await resolveAccount(accountQ);
     const commitments = await q(
       db.from("commitments").select("*").eq("account_id", account.id).ilike("name", `%${commitmentQ}%`),
@@ -387,6 +429,83 @@ switch (cmd) {
     await q(db.from("commitments").update({ next_due: date }).eq("id", commitment.id), "update commitment");
     await logActivity({ type: "note", title: `Commitment anchored: ${commitment.name} → ${date}`, account_id: account.id, contact_id: account.contact_id });
     ok(`${account.name} · "${commitment.name}" next due ${date}`);
+    break;
+  }
+
+  case "add-commitment": {
+    const [accountQ, rawName] = pos;
+    if (!accountQ || !rawName || pos.length !== 2) die('Usage: add-commitment <account> "<name>" --kind recurring|continuous|one_time [--cadence monthly] [--due YYYY-MM-DD] [--agent id] [--customer id] [--source "..."] [--notes "..."]');
+    const name = nonempty(rawName, "name");
+    if (!COMMITMENT_KINDS.includes(flags.kind)) die(`Invalid --kind. Accepted: ${COMMITMENT_KINDS.join(", ")}`);
+    const cadence = flags.cadence ?? (flags.kind === "recurring" ? "monthly" : null);
+    if (cadence !== null && !SUPPORTED_CADENCES.includes(cadence)) die(`Unsupported --cadence. Accepted: ${SUPPORTED_CADENCES.join(", ")}; only monthly has automatic due-date advancement.`);
+    const nextDue = flags.due !== undefined ? validateDate(flags.due, "--due") : null;
+    const account = await resolveAccount(accountQ);
+    const customerId = nonempty(flags.customer ?? account.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""), "--customer (or account slug)");
+    const agentId = nonempty(flags.agent ?? `${customerId}.ops`, "--agent");
+    console.log(`Using customer_id=${customerId}, agent_id=${agentId}`);
+    const commitment = await q(db.from("commitments").insert({
+      account_id: account.id, name, kind: flags.kind, cadence, next_due: nextDue,
+      customer_id: customerId, agent_id: agentId, source: flags.source ?? null, notes: flags.notes ?? null,
+    }).select().single(), "insert commitment");
+    await logActivity({ type: "note", title: `Commitment added: ${name}`, description: flags.notes ?? null,
+      account_id: account.id, contact_id: account.contact_id,
+      metadata: { commitment_id: commitment.id, kind: flags.kind, cadence, next_due: nextDue, customer_id: customerId, agent_id: agentId },
+    });
+    ok(`${account.name}: commitment "${name}" [${commitment.id}] · customer ${customerId} · agent ${agentId}`);
+    break;
+  }
+
+  case "edit-commitment": {
+    const [accountQ, commitmentQ] = pos;
+    if (!accountQ || !commitmentQ || pos.length !== 2 || !Object.keys(flags).length) die('Usage: edit-commitment <account> <commitment> [--name "..."] [--due YYYY-MM-DD] [--active true|false] [--notes "..."]');
+    const patch = {};
+    if (flags.name !== undefined) patch.name = nonempty(flags.name, "--name");
+    if (flags.due !== undefined) patch.next_due = validateDate(flags.due, "--due");
+    if (flags.notes !== undefined) patch.notes = flags.notes;
+    if (flags.active !== undefined) {
+      if (!["true", "false"].includes(flags.active)) die("--active must be true or false.");
+      patch.active = flags.active === "true";
+    }
+    const account = await resolveAccount(accountQ);
+    const commitment = await resolveCommitment(account.id, commitmentQ);
+    const updated = await q(db.from("commitments").update(patch).eq("id", commitment.id).eq("account_id", account.id).select().single(), "update commitment");
+    await logActivity({ type: "note", title: `Commitment updated: ${updated.name}`, account_id: account.id, contact_id: account.contact_id,
+      metadata: { commitment_id: commitment.id, before: Object.fromEntries(Object.keys(patch).map((key) => [key, commitment[key]])), after: patch },
+    });
+    ok(`${account.name}: updated "${updated.name}" [${updated.id}] · ${Object.entries(patch).map(([key, value]) => `${key}=${value}`).join(", ")}`);
+    break;
+  }
+
+  case "mark-contract-signed": {
+    const [accountQ, contractQ] = pos;
+    if (!accountQ || !contractQ || pos.length !== 2) die('Usage: mark-contract-signed <account> <contract-title-or-id> [--signed-on YYYY-MM-DD] [--note "..."]');
+    const signedOn = flags["signed-on"] !== undefined ? validateDate(flags["signed-on"], "--signed-on") : null;
+    const account = await resolveAccount(accountQ);
+    const lookup = db.from("contracts").select("*").eq("account_id", account.id);
+    const rows = await q(UUID_RE.test(contractQ) ? lookup.eq("id", contractQ) : lookup.ilike("title", `%${contractQ}%`), "contracts lookup");
+    const contract = pickOne(rows, "contract", (r) => `${r.title} [${r.id}]`);
+    const note = `Recorded as externally signed${signedOn ? ` on ${signedOn}` : ""}.${flags.note ? ` ${flags.note}` : ""}`;
+    const description = [contract.description, note].filter(Boolean).join("\n\n");
+    await q(db.from("contracts").update({ status: "signed", description, updated_at: new Date().toISOString() }).eq("id", contract.id).eq("account_id", account.id).select().single(), "mark contract signed");
+    await logActivity({ type: "contract_signed", title: `Contract marked signed: ${contract.title}`, description: note,
+      account_id: account.id, contact_id: account.contact_id,
+      metadata: { contract_id: contract.id, signed_on: signedOn, previous_status: contract.status, source: "external_record" },
+    });
+    ok(`${account.name}: "${contract.title}" marked signed${signedOn ? ` on ${signedOn}` : ""} [${contract.id}]`);
+    break;
+  }
+
+  case "list-links": {
+    const who = pos.join(" ");
+    if (!who) die("Usage: list-links <account|deal>");
+    const target = await resolveTarget(who);
+    if (!target.account_id && !target.deal_id) die("Links belong to accounts or deals.");
+    const links = await q(db.from("client_links").select("id,kind,title,url")
+      .eq(target.account_id ? "account_id" : "deal_id", target.account_id ?? target.deal_id)
+      .order("created_at", { ascending: true }), "list links");
+    for (const link of links) console.log(`${link.id}\t${link.kind}\t${link.title}\t${link.url}`);
+    if (!links.length) console.log(`No links attached to ${target.kind} ${target.label}.`);
     break;
   }
 
@@ -401,5 +520,5 @@ switch (cmd) {
   }
 
   default:
-    die(`Unknown command "${cmd ?? ""}". Commands: find, status, move-deal, add-prospect, add-deal, log, attach-link, remove-link, record-delivery, anchor, set-mrr`);
+    die(`Unknown command "${cmd ?? ""}". Commands: ${Object.keys(COMMAND_FLAGS).join(", ")}`);
 }
