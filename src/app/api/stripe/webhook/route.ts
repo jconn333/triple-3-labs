@@ -39,13 +39,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  const admin = createAdminClient();
+  const { error: receiptError } = await admin.from("stripe_events").insert({
+    id: event.id,
+    type: event.type,
+  });
+  if (receiptError?.code === "23505") return NextResponse.json({ received: true });
+  if (receiptError) {
+    console.error("Could not record Stripe event:", receiptError);
+    return NextResponse.json({ error: "Could not record event" }, { status: 500 });
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.metadata?.purpose !== "implementation_fee") break;
         if (session.payment_status === "paid") {
-          await markSetupFeePaid(session);
+          await markSetupFeePaid(session, event.created);
         } else {
           // ACH debit initiated; funds settle asynchronously.
           await logActivity(session, {
@@ -60,7 +71,7 @@ export async function POST(request: NextRequest) {
       case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.metadata?.purpose !== "implementation_fee") break;
-        await markSetupFeePaid(session);
+        await markSetupFeePaid(session, event.created);
         break;
       }
       case "checkout.session.async_payment_failed": {
@@ -86,6 +97,9 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error(`Webhook handling failed for ${event.type}:`, err);
+    // A failed attempt must remain retryable; only completed processing keeps the claim.
+    const { error: releaseError } = await admin.from("stripe_events").delete().eq("id", event.id);
+    if (releaseError) console.error(`Could not release failed Stripe event ${event.id}:`, releaseError);
     // 500 so Stripe retries the delivery.
     return NextResponse.json({ error: "Handler failure" }, { status: 500 });
   }
@@ -93,24 +107,31 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-async function markSetupFeePaid(session: Stripe.Checkout.Session): Promise<void> {
+async function markSetupFeePaid(session: Stripe.Checkout.Session, created: number): Promise<void> {
   const admin = createAdminClient();
   const accountId = session.metadata?.account_id;
   if (!accountId) return;
 
-  const paidAt = new Date().toISOString();
+  const paidAt = new Date(created * 1000).toISOString();
   const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
   const paymentIntent =
     typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
 
   const { data: account, error: accountError } = await admin
     .from("accounts")
-    .select("id, contact_id, setup_fee_paid_at, stripe_customer_id")
+    .select("id, contact_id, setup_fee_paid_at, setup_fee_payment_intent, stripe_customer_id")
     .eq("id", accountId)
     .single();
   if (accountError) throw accountError;
   if (!account) throw new Error(`Setup-fee account not found: ${accountId}`);
-  if (account.setup_fee_paid_at) {
+  // Different Stripe event types can describe the same checkout; that is not a second payment.
+  const { data: previous, error: previousError } = await admin.from("activities")
+    .select("id").eq("account_id", accountId).eq("type", "payment_received")
+    .contains("metadata", { checkout_session: session.id });
+  if (previousError) throw previousError;
+  if (previous?.length) return;
+
+  if (account.setup_fee_paid_at && (!paymentIntent || account.setup_fee_payment_intent !== paymentIntent)) {
     // Already recorded (e.g. a stale link got paid twice) — still make sure no
     // link stays active, and leave a loud trace for follow-up/refund.
     await deactivateAllSetupFeeLinks(accountId).catch(() => {});
@@ -129,7 +150,7 @@ async function markSetupFeePaid(session: Stripe.Checkout.Session): Promise<void>
   const { error: updateError } = await admin
     .from("accounts")
     .update({
-      setup_fee_paid_at: paidAt,
+      setup_fee_paid_at: account.setup_fee_paid_at ?? paidAt,
       setup_fee_payment_intent: paymentIntent ?? null,
       stripe_customer_id: account.stripe_customer_id ?? customerId ?? null,
       updated_at: paidAt,
