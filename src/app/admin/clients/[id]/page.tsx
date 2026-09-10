@@ -71,6 +71,7 @@ interface Delivery {
   summary: string | null;
   delivered_at: string;
   delivered_by?: string | null;
+  output_url?: string | null;
 }
 interface ClientLink {
   id: string;
@@ -121,6 +122,7 @@ function ClientRecord({ id }: { id: string }) {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [expandedDeals, setExpandedDeals] = useState<Record<string, boolean>>({});
   const [commitments, setCommitments] = useState<Commitment[]>([]);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [links, setLinks] = useState<ClientLink[]>([]);
@@ -352,6 +354,7 @@ function ClientRecord({ id }: { id: string }) {
         at: a.created_at,
         title: a.title,
         description: a.description,
+        outputUrl: null,
         ...classify(a.type),
       })),
       ...deliveries.map((d) => ({
@@ -359,6 +362,7 @@ function ClientRecord({ id }: { id: string }) {
         at: d.delivered_at,
         title: d.summary ?? "Delivery logged",
         description: commitments.find((c) => c.id === d.commitment_id)?.name ?? null,
+        outputUrl: d.output_url ?? null,
         who: "agent" as const,
         tone: "accent" as const,
       })),
@@ -507,11 +511,19 @@ function ClientRecord({ id }: { id: string }) {
                 <PanelRows>
                   {deals.map((deal) => (
                     <div key={deal.id} className="px-4 py-3">
-                      <p className="text-sm font-medium text-ink">{deal.name}</p>
+                      <Link href={`/admin/pipeline?deal=${deal.id}`} className="text-sm font-medium text-ink hover:underline">{deal.name}</Link>
                       <p className="mt-0.5 text-sub text-ink-2">
                         {deal.amount ? formatCurrency(deal.amount) : "No amount"}
                         {deal.stage && <> · {(deal.stage as { name?: string }).name}</>}
                       </p>
+                      {deal.description && (
+                        <div className="mt-2">
+                          <p className={cn("whitespace-pre-wrap text-sub text-ink-2", !expandedDeals[deal.id] && "line-clamp-3")}>{deal.description}</p>
+                          <Button size="sm" variant="ghost" aria-expanded={!!expandedDeals[deal.id]} onClick={() => setExpandedDeals((prev) => ({ ...prev, [deal.id]: !prev[deal.id] }))}>
+                            {expandedDeals[deal.id] ? "Show less" : "Show more"}
+                          </Button>
+                        </div>
+                      )}
                       <div className="mt-2">
                         <DealStageControl deal={deal} onChanged={fetchAccount} />
                       </div>
@@ -576,6 +588,11 @@ function ClientRecord({ id }: { id: string }) {
                     <div className="min-w-0">
                       <p className="text-sm text-ink">{item.title}</p>
                       {item.description && <p className="mt-0.5 text-sub text-ink-2">{item.description}</p>}
+                      {item.outputUrl && isWebUrl(item.outputUrl) && (
+                        <a href={item.outputUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-sub text-accent-ink hover:underline">
+                          Open delivery evidence <ExternalLink size={12} />
+                        </a>
+                      )}
                     </div>
                   </li>
                 ))}
