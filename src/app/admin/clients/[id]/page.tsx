@@ -121,6 +121,7 @@ export default function ClientPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [subsLoading, setSubsLoading] = useState(true);
+  const [billingError, setBillingError] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [sigContract, setSigContract] = useState<Contract | null>(null);
   const [counterSignContract, setCounterSignContract] = useState<Contract | null>(null);
@@ -171,14 +172,16 @@ export default function ClientPage() {
   }, [fetchAccount]);
 
   const fetchStripeData = useCallback(async () => {
+    setSubsLoading(true);
     try {
       const res = await fetch(`/api/accounts/${id}/subscriptions`);
-      if (!res.ok) throw new Error("Failed");
       const data = await res.json();
+      if (!res.ok || data.error) throw new Error(res.status === 401 ? "Session expired; reload this page." : data.error || "Failed to load billing");
       setSubscriptions(data.subscriptions || []);
       setInvoices(data.invoices || []);
-    } catch {
-      // Stripe data is optional
+      setBillingError(null);
+    } catch (err) {
+      setBillingError(err instanceof Error ? err.message : "Failed to load billing");
     } finally {
       setSubsLoading(false);
     }
@@ -560,13 +563,18 @@ export default function ClientPage() {
                 ) : (
                   <Badge>No setup fee</Badge>
                 )}
-                {account.setup_fee_paid_at && account.stripe_customer_id && !subsLoading && !activeSub && (
-                  <Button size="sm" variant="primary" onClick={() => setShowStartSub(true)}>
+                {account.setup_fee_paid_at && account.stripe_customer_id && !activeSub && (
+                  <Button size="sm" variant="primary" disabled={subsLoading || !!billingError} onClick={() => setShowStartSub(true)}>
                     Start subscription
                   </Button>
                 )}
               </PanelHeader>
-              {subsLoading ? (
+              {billingError ? (
+                <div role="alert" className="flex items-center gap-3 px-4 py-3 text-sm text-bad">
+                  <span className="flex-1">{billingError}</span>
+                  <Button size="sm" onClick={fetchStripeData} loading={subsLoading}>Retry</Button>
+                </div>
+              ) : subsLoading ? (
                 <div className="p-4">
                   <PanelSkeleton rows={1} />
                 </div>
@@ -641,7 +649,7 @@ export default function ClientPage() {
               )}
             </Panel>
 
-            {invoices.length > 0 && (
+            {!billingError && !subsLoading && invoices.length > 0 && (
               <Panel>
                 <PanelHeader title="Invoices" count={invoices.length} />
                 <PanelRows>

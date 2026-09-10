@@ -28,12 +28,19 @@ export default function StartSubscriptionModal({
   const [preview, setPreview] = useState<Preview | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/accounts/${accountId}/subscription`)
-      .then((r) => r.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(res.status === 401 ? "Session expired; reload this page." : data.error || "Could not load Stripe details");
+        }
+        return res.json();
+      })
       .then(setPreview)
-      .catch(() => setPreview({ eligible: false, reason: "Could not load Stripe details" }))
+      .catch((err) => setPreviewError(err instanceof Error ? err.message : "Could not load Stripe details"))
       .finally(() => setLoading(false));
   }, [accountId]);
 
@@ -54,7 +61,7 @@ export default function StartSubscriptionModal({
       if (res.status === 409) {
         setPreview({ eligible: false, reason: data.error });
       }
-      if (!res.ok) throw new Error(data.error || "Failed to start subscription");
+      if (!res.ok) throw new Error(res.status === 401 ? "Session expired; reload this page." : data.error || "Failed to start subscription");
       toast.success(`Subscription started — ${amount}/mo`);
       onStarted();
       onClose();
@@ -91,6 +98,8 @@ export default function StartSubscriptionModal({
         <div className="flex items-center justify-center gap-2 py-8 text-sm text-ink-2">
           Checking Stripe…
         </div>
+      ) : previewError ? (
+        <p role="alert" className="rounded-lg border border-bad/40 bg-bad-soft p-3 text-sm text-bad">{previewError}</p>
       ) : !preview?.eligible ? (
         <p className="rounded-lg border border-warn/40 bg-warn-soft p-3 text-sm text-warn">
           {preview?.reason || "Not eligible to start a subscription."}

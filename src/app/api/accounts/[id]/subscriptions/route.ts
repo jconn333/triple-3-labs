@@ -21,7 +21,10 @@ export async function GET(
     return NextResponse.json({ error: "Account not found" }, { status: 404 });
   }
 
-  if (!account.stripe_customer_id || !process.env.STRIPE_SECRET_KEY) {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: "Stripe billing is not configured" }, { status: 502 });
+  }
+  if (!account.stripe_customer_id) {
     return NextResponse.json({ subscriptions: [], invoices: [] });
   }
 
@@ -30,7 +33,7 @@ export async function GET(
     // list subscriptions + invoices across all of them, not just the stored id.
     const contact = account.contact as { email?: string | null } | { email?: string | null }[] | null;
     const email = Array.isArray(contact) ? contact[0]?.email : contact?.email;
-    const customerIds = await findStripeCustomerIds({ knownId: account.stripe_customer_id, email });
+    const customerIds = await findStripeCustomerIds({ knownId: account.stripe_customer_id, email, strict: true });
 
     const perCustomer = await Promise.all(
       customerIds.map((cid) => Promise.all([getCustomerSubscriptions(cid), getCustomerInvoices(cid)])),
@@ -43,6 +46,6 @@ export async function GET(
     return NextResponse.json({ subscriptions, invoices });
   } catch (stripeErr) {
     console.error("Stripe fetch error:", stripeErr);
-    return NextResponse.json({ subscriptions: [], invoices: [], error: "Failed to fetch Stripe data" });
+    return NextResponse.json({ error: "Failed to fetch Stripe data" }, { status: 502 });
   }
 }
