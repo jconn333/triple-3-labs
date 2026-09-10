@@ -57,3 +57,7 @@ regy-checkout-1.png
 regy-checkout-full.png
 .t3-sweep.json
 .t3-ppc.json
+
+# runtime output from the per-client watcher scripts
+scripts/.*.log
+scripts/*.log
