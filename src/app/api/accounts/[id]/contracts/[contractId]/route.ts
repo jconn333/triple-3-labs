@@ -90,34 +90,51 @@ export async function DELETE(
     return NextResponse.json({ error: "Contract not found" }, { status: 404 });
   }
 
-  // Get account for activity logging
-  const { data: account } = await supabase
+  const { count, error: commitmentError } = await supabase.from("commitments")
+    .select("id", { count: "exact", head: true }).eq("contract_id", contractId);
+  if (commitmentError) return NextResponse.json({ error: "Could not check contract references" }, { status: 500 });
+  if (count) {
+    return NextResponse.json({
+      error: `${count} commitment${count === 1 ? " references" : "s reference"} this contract; unlink them first`,
+    }, { status: 409 });
+  }
+
+  // Get account for activity logging before deleting anything.
+  const { data: account, error: accountError } = await supabase
     .from("accounts")
     .select("contact_id")
     .eq("id", accountId)
     .single();
+  if (accountError || !account) return NextResponse.json({ error: "Could not load contract account" }, { status: 500 });
 
-  // Delete from storage
-  await supabase.storage.from("contracts").remove([contract.file_path]);
-
-  // Delete from database
+  // The FK also protects against a commitment being added after the preflight.
   const { error: deleteErr } = await supabase
     .from("contracts")
     .delete()
-    .eq("id", contractId);
+    .eq("id", contractId)
+    .eq("account_id", accountId);
 
   if (deleteErr) {
-    return NextResponse.json({ error: deleteErr.message }, { status: 500 });
+    return NextResponse.json({ error: deleteErr.code === "23503" ? "Linked records reference this contract; unlink them first" : deleteErr.message }, { status: deleteErr.code === "23503" ? 409 : 500 });
+  }
+
+  // The row is gone. Cleanup failure leaves only an orphan, not a broken contract.
+  try {
+    const { error: storageError } = await supabase.storage.from("contracts").remove([contract.file_path]);
+    if (storageError) console.error(`Contract ${contractId} deleted; storage cleanup failed:`, storageError);
+  } catch (error) {
+    console.error(`Contract ${contractId} deleted; storage cleanup failed:`, error);
   }
 
   // Log activity
   if (account) {
-    await supabase.from("activities").insert({
+    const { error: activityError } = await supabase.from("activities").insert({
       contact_id: account.contact_id,
       account_id: accountId,
       type: "contract_deleted",
       title: `Contract deleted: ${contract.title}`,
     });
+    if (activityError) return NextResponse.json({ error: "Contract deleted, but its activity could not be saved" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

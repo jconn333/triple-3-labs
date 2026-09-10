@@ -329,11 +329,14 @@ function ClientRecord({ id }: { id: string }) {
     if (!confirm(`Delete contract "${title}"?`)) return;
     try {
       const res = await fetch(`/api/accounts/${id}/contracts/${contractId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete contract");
+      }
       setContracts((prev) => prev.filter((c) => c.id !== contractId));
       toast.success("Contract deleted");
-    } catch {
-      toast.error("Failed to delete contract");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete contract");
     }
   }
 
